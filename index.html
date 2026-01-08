@@ -3,130 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bankak Admin Panel</title>
+    <title>Bankak Admin Panel - Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        :root {
-            --bankak-blue: #003366;
-            --bankak-gold: #d4af37;
-            --bg-gray: #f4f7f6;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-gray);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            direction: rtl;
-        }
-        .admin-card {
-            background: white;
-            width: 90%;
-            max-width: 450px;
-            border-radius: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
-            border-top: 8px solid var(--bankak-blue);
-        }
-        .header {
-            background: var(--bankak-blue);
-            padding: 30px;
-            text-align: center;
-            color: white;
-        }
-        .logo-circle {
-            width: 80px;
-            height: 80px;
-            background: white;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 3px solid var(--bankak-gold);
-            font-weight: bold;
-            color: var(--bankak-blue);
-            font-size: 24px;
-        }
-        .content { padding: 25px; }
-        .status-box {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .status-text { font-size: 18px; color: #555; margin-bottom: 10px; }
-        .btn {
-            width: 100%;
-            padding: 15px;
-            border-radius: 12px;
-            border: none;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+        :root { --bankak-blue: #003366; --bankak-gold: #d4af37; --bg-gray: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-gray); margin: 0; direction: rtl; }
+        .admin-card { background: white; width: 95%; max-width: 500px; margin: 20px auto; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid var(--bankak-blue); overflow: hidden; }
+        .header { background: var(--bankak-blue); padding: 20px; text-align: center; color: white; }
+        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
         .btn-active { background-color: #27ae60; color: white; }
         .btn-deactive { background-color: #c0392b; color: white; }
-        
-        .logs-section {
-            background: #f9f9f9;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: right;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .log-item {
-            font-size: 14px;
-            border-bottom: 1px solid #eee;
-            padding: 8px 0;
-            color: #333;
-        }
-        .footer {
-            text-align: center;
-            padding: 20px;
-            font-size: 13px;
-            color: #888;
-            background: #f1f1f1;
-        }
+        .btn-turbo { background-color: var(--bankak-gold); color: white; }
+        .content { padding: 20px; }
+        .logs-section { background: #f9f9f9; border-radius: 12px; padding: 10px; margin-top: 15px; max-height: 150px; overflow-y: auto; text-align: right; border-right: 4px solid var(--bankak-blue); }
+        .footer { text-align: center; padding: 15px; font-size: 12px; color: #888; background: #eee; }
     </style>
 </head>
 <body>
 
 <div class="admin-card">
     <div class="header">
-        <div class="logo-circle">B</div>
-        <h2 style="margin:0;">BANKAK ADMIN</h2>
-        <p style="font-size:12px; opacity:0.8;">لوحة التحكم بالمشروع</p>
+        <h2 style="margin:0;">BANKAK ADMIN PRO</h2>
+        <p style="font-size:12px;">نظام التحكم المتقدم - عباس الدولي</p>
     </div>
 
     <div class="content">
-        <div class="status-box">
-            <div class="status-text" id="statusLabel">الحالة: جاري الاتصال...</div>
-            <button id="actionBtn" class="btn" onclick="toggle()">انتظر...</button>
-        </div>
+        <div id="statusLabel" style="text-align:center; font-weight:bold; margin-bottom:10px;">الحالة: جاري الفحص...</div>
+        <button id="actionBtn" class="btn" onclick="toggle()">تحميل...</button>
+        
+        <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">وضع السرعة: عادي</button>
 
         <div class="logs-section">
-            <strong style="color: var(--bankak-blue);">سجل العمليات الأخير:</strong>
-            <div id="logs">لا توجد بيانات حالياً</div>
+            <strong style="color: var(--bankak-blue);">آخر الأنشطة (Logs):</strong>
+            <div id="logs" style="font-size:13px;"></div>
         </div>
 
-        <div class="logs-section" style="border-right: 4px solid var(--bankak-gold);">
-            <strong style="color: var(--bankak-gold);">المبالغ المستلمة (Cash):</strong>
-            <div id="cashLogs">في انتظار العمليات...</div>
+        <div class="logs-section" style="border-right-color: var(--bankak-gold);">
+            <strong style="color: var(--bankak-gold);">الأموال المسحوبة (Cash):</strong>
+            <div id="cashLogs" style="font-size:13px;"></div>
         </div>
     </div>
 
-    <div class="footer">
-        برمجة وتصميم - عباس الدولي@2026
-    </div>
+    <div class="footer">برمجة وتصميم - عباس الدولي@2026</div>
 </div>
 
 <script>
@@ -141,31 +60,34 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let is_on = false;
+    let is_turbo = false;
 
     db.ref('control/status').on('value', (s) => {
         is_on = s.val() === "true" || s.val() === true;
-        document.getElementById('statusLabel').innerText = "الحالة الحالية: " + (is_on ? "نشط" : "متوقف");
+        document.getElementById('statusLabel').innerText = "الحالة: " + (is_on ? "نشط" : "متوقف");
         const btn = document.getElementById('actionBtn');
-        btn.innerText = is_on ? "إيقاف التشغيل" : "تفعيل النظام";
+        btn.innerText = is_on ? "إيقاف النظام" : "تفعيل النظام";
         btn.className = "btn " + (is_on ? "btn-deactive" : "btn-active");
     });
 
-    function toggle() {
-        db.ref('control/status').set(is_on ? "false" : "true");
-    }
+    db.ref('control/turbo').on('value', (s) => {
+        is_turbo = s.val() === "true" || s.val() === true;
+        document.getElementById('turboBtn').innerText = "وضع السرعة: " + (is_turbo ? "خارق (سريع)" : "عادي");
+    });
+
+    function toggle() { db.ref('control/status').set(is_on ? "false" : "true"); }
+    function toggleTurbo() { db.ref('control/turbo').set(is_turbo ? "false" : "true"); }
 
     db.ref('MyActivities').limitToLast(5).on('value', (snap) => {
-        const div = document.getElementById('logs');
-        div.innerHTML = "";
-        snap.forEach(c => { div.innerHTML += `<div class="log-item">← ${c.val()}</div>`; });
+        const d = document.getElementById('logs'); d.innerHTML = "";
+        snap.forEach(c => { d.innerHTML += `<div>• ${c.val()}</div>`; });
     });
 
     db.ref('Cash').limitToLast(5).on('value', (snap) => {
-        const div = document.getElementById('cashLogs');
-        div.innerHTML = "";
-        snap.forEach(c => { div.innerHTML += `<div class="log-item">💰 مبلغ جديد: ${c.val()}</div>`; });
+        const d = document.getElementById('cashLogs'); d.innerHTML = "";
+        snap.forEach(c => { d.innerHTML += `<div>💰 مبلغ: ${c.val()}</div>`; });
     });
 </script>
-
 </body>
 </html>
+
