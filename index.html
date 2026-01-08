@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SUDAN CONTROL</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { font-family: Arial; background: #121212; color: white; text-align: center; padding: 50px; }
+        .btn { padding: 20px 40px; font-size: 20px; cursor: pointer; border-radius: 10px; border: none; }
+        .on { background: #28a745; color: white; }
+        .off { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <h2>Project Control Panel</h2>
+    <div id="statusText" style="margin:20px; font-size:24px;">Connecting...</div>
+    <button id="mainBtn" class="btn" onclick="toggle()">Wait...</button>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
+            authDomain: "sudancontrol-c5050.firebaseapp.com",
+            databaseURL: "https://sudancontrol-c5050-default-rtdb.firebaseio.com",
+            projectId: "sudancontrol-c5050",
+            storageBucket: "sudancontrol-c5050.appspot.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let currentState = false;
+
+        db.ref('control/status').on('value', (snap) => {
+            currentState = snap.val() === "true" || snap.val() === true;
+            document.getElementById('statusText').innerText = "Status: " + (currentState ? "ACTIVE" : "OFF");
+            document.getElementById('mainBtn').innerText = currentState ? "Switch to OFF" : "Switch to ON";
+            document.getElementById('mainBtn').className = "btn " + (currentState ? "off" : "on");
+        });
+
+        function toggle() {
+            db.ref('control/status').set(currentState ? "false" : "true");
+        }
+    </script>
+</body>
+</html>
