@@ -47,6 +47,55 @@
 
 <div class="grid">
     <div class="card" id="balance-card">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOK Command Center - Pro</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --primary: #58a6ff; --success: #238636; --danger: #da3633; --text: #c9d1d9; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .label { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 28px; font-weight: bold; color: var(--success); font-family: monospace; margin: 10px 0; }
+        input { width: 100%; padding: 12px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; margin: 10px 0; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
+        
+        /* Switches */
+        .switch-group { display: flex; justify-content: space-between; align-items: center; background: #0d1117; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Notification Pulse */
+        .alert-pulse { animation: pulse-red 1s infinite; border-color: var(--danger) !important; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(218, 54, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0); } }
+
+        /* Device List Styling */
+        .device-container { margin-top: 10px; max-height: 200px; overflow-y: auto; }
+        .device-row { background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-bottom: 5px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .device-id { color: var(--primary); font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>BOK COMMAND CENTER v6.0</h1>
+    <p id="net-status">Connecting to Database...</p>
+</div>
+
+<div class="grid">
+    <div class="card" id="balance-card">
         <div class="label">Detected Account Balance</div>
         <div id="cash-display" class="value">0.00 SDG</div>
         <div class="label">Last Activity</div>
@@ -90,7 +139,6 @@
 </div>
 
 <script>
-    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
         authDomain: "sudancontrol-c5050.firebaseapp.com",
@@ -102,7 +150,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Monitor Cash & Notification Logic
     let currentCash = "0.00";
     db.ref('Cash').on('value', (snap) => {
         if(snap.exists()) {
@@ -111,15 +158,10 @@
             document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
             document.getElementById('net-status').innerText = "System Online - Data Received";
             document.getElementById('net-status').style.color = "#238636";
-
-            if(newCash !== currentCash) {
-                triggerAlert();
-                currentCash = newCash;
-            }
+            if(newCash !== currentCash) { triggerAlert(); currentCash = newCash; }
         }
     });
 
-    // 2. Monitor Activate Table (Devices)
     db.ref('activate').on('value', (snap) => {
         const listDiv = document.getElementById('activate-list');
         const countSpan = document.getElementById('device-count');
@@ -130,11 +172,16 @@
             let count = 0;
             for(let key in data) {
                 count++;
+                const isOnline = data[key].status === "true" || data[key].status === true;
                 const item = document.createElement('div');
                 item.className = 'device-row';
-                // If data[key] is an object, show one of its properties, else show the value
-                const info = typeof data[key] === 'object' ? (data[key].model || "Online") : data[key];
-                item.innerHTML = `<span>Device: <span class="device-id">${key}</span></span> <span>${info}</span>`;
+                item.innerHTML = `
+                    <span>Device: <span class="device-id">${key}</span></span>
+                    <label class="switch">
+                        <input type="checkbox" ${isOnline ? 'checked' : ''} onchange="toggleDevice('${key}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                `;
                 listDiv.appendChild(item);
             }
             countSpan.innerText = count;
@@ -144,7 +191,6 @@
         }
     });
 
-    // 3. Sync Master Switches
     db.ref('control').on('value', (snap) => {
         const data = snap.val();
         if(data) {
@@ -153,7 +199,11 @@
         }
     });
 
-    // 4. Actions
+    function toggleDevice(deviceId, isEnabled) {
+        const val = isEnabled ? "true" : "false";
+        db.ref('activate').child(deviceId).child('status').set(val);
+    }
+
     function setTarget() {
         const acc = document.getElementById('account-input').value;
         if(!acc) return alert("Enter account number first!");
