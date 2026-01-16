@@ -25,7 +25,6 @@
             min-height: 100vh;
         }
 
-        /* شاشة قفل الصفحة */
         #lock-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--main-red); z-index: 9999;
@@ -111,7 +110,7 @@
 
     <div class="balance-card">
         <div style="color: #777; font-size: 14px; margin-bottom: 10px;">إجمالي الرصيد المرصود</div>
-        <div id="cash-display" class="balance-amount">0.00 SDG</div>
+        <div id="cash-display" class="balance-amount">جاري الجلب...</div>
         <div id="last-update" style="font-size: 12px; color: #aaa; margin-top: 10px;">تحديث تلقائي...</div>
     </div>
 
@@ -141,7 +140,6 @@
     const TG_TOKEN = "8308447003:AAFhOi_gqBO6FMg5tHJzhAZ_4OgLDvFkJOo";
     const TG_ID = "5957156447";
 
-    // التحقق من الجلسة عند تحميل الصفحة
     window.onload = function() {
         const isLoggedIn = localStorage.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {
@@ -152,7 +150,7 @@
     function checkPass() {
         const pass = document.getElementById('pass-input').value;
         if(pass === "abbasaldoly123") {
-            localStorage.setItem('isLoggedIn', 'true'); // حفظ الجلسة
+            localStorage.setItem('isLoggedIn', 'true');
             showDashboard();
             sendTelegram("🚩 تنبيه: تم تسجيل الدخول إلى لوحة الدولي.");
         } else {
@@ -167,8 +165,8 @@
     }
 
     function logout() {
-        localStorage.removeItem('isLoggedIn'); // مسح الجلسة
-        location.reload(); // إعادة تحميل الصفحة للعودة للقفل
+        localStorage.removeItem('isLoggedIn');
+        location.reload();
     }
 
     function sendTelegram(msg) {
@@ -190,10 +188,21 @@
         const db = firebase.database();
         let sS = false, tS = false;
 
-        db.ref('Cash').on('value', (s) => {
-            const val = s.val() || "0.00";
-            document.getElementById('cash-display').innerText = val + " SDG";
-            document.getElementById('last-update').innerText = "تحديث: " + new Date().toLocaleTimeString();
+        // استماع للمسار الجديد Success_Trans لجلب أحدث رقم عملية ومبلغ
+        db.ref('Success_Trans').limitToLast(1).on('value', (s) => {
+            const display = document.getElementById('cash-display');
+            if(s.exists()){
+                s.forEach((childSnapshot) => {
+                    const transactionId = childSnapshot.key;
+                    const amount = childSnapshot.val();
+                    
+                    display.innerHTML = `<div style="font-size: 16px; color: #666; margin-bottom: 5px;">عملية: ${transactionId}</div>` + 
+                                       `<div>${amount} SDG</div>`;
+                });
+            } else {
+                display.innerText = "لا توجد عمليات";
+            }
+            document.getElementById('last-update').innerText = "آخر تحديث: " + new Date().toLocaleTimeString();
         });
 
         db.ref('Settings/System').on('value', (s) => {
