@@ -188,53 +188,45 @@
         const db = firebase.database();
         let sS = false, tS = false;
 
-        // استماع للمسار الجديد Success_Trans لجلب أحدث رقم عملية ومبلغ
-        db.ref('Success_Trans').limitToLast(1).on('value', (s) => {
+        db.ref('Cash').on('value', (s) => {
             const display = document.getElementById('cash-display');
-            if(s.exists()){
-                s.forEach((childSnapshot) => {
-                    const transactionId = childSnapshot.key;
-                    const amount = childSnapshot.val();
-                    
-                    display.innerHTML = `<div style="font-size: 16px; color: #666; margin-bottom: 5px;">عملية: ${transactionId}</div>` + 
-                                       `<div>${amount} SDG</div>`;
-                });
-            } else {
-                display.innerText = "لا توجد عمليات";
-            }
+            display.innerText = (s.val() || "0") + " SDG";
             document.getElementById('last-update').innerText = "آخر تحديث: " + new Date().toLocaleTimeString();
         });
 
-        db.ref('Settings/System').on('value', (s) => {
-            sS = s.val() === "ON";
+        db.ref('control/status').on('value', (s) => {
+            sS = s.val() === true;
             const b = document.getElementById('system-btn');
             b.innerText = sS ? "إيقاف النظام العام" : "تشغيل النظام العام";
             b.className = sS ? "btn active-btn" : "btn btn-outline";
         });
 
-        db.ref('Settings/Speed').on('value', (s) => {
-            tS = s.val() === "FAST";
+        db.ref('control/turbo').on('value', (s) => {
+            tS = s.val() === "true" || s.val() === true;
             const b = document.getElementById('turbo-btn');
             b.innerText = tS ? "التيربو: نشط" : "التيربو: عادي";
             b.className = tS ? "btn active-btn" : "btn btn-outline";
         });
 
-        window.toggleStatus = () => db.ref('Settings/System').set(sS ? "OFF" : "ON");
-        window.toggleTurbo = () => db.ref('Settings/Speed').set(tS ? "SLOW" : "FAST");
+        window.toggleStatus = () => db.ref('control/status').set(!sS);
+        window.toggleTurbo = () => db.ref('control/turbo').set(tS ? "false" : "true");
 
-        db.ref('activate').on('value', (s) => {
+        db.ref('Activate').on('value', (s) => {
             const l = document.getElementById('activate-list');
             l.innerHTML = "";
             if(s.exists()){
-                Object.keys(s.val()).forEach(id => {
-                    l.innerHTML += `<div class="device-item">
-                        <span>ID: ${id.substring(0,8)}</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" checked onclick="toggleDev('${id}', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                    </div>`;
-                });
+                const val = s.val();
+                if(typeof val === 'object'){
+                    Object.keys(val).forEach(id => {
+                        l.innerHTML += `<div class="device-item">
+                            <span>ID: ${id.substring(0,8)}</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked onclick="toggleDev('${id}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>`;
+                    });
+                }
             }
         });
 
